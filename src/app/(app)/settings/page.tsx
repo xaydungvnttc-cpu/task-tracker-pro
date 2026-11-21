@@ -74,7 +74,7 @@ export default function SettingsPage() {
   };
 
   const testBtn = (k: ChannelKey) => (
-    <Button size="sm" disabled={!owner || !!busy || IS_STATIC_DEMO} title={IS_STATIC_DEMO ? "Bản xem thử trực tuyến chưa gửi tin. Cần bản cài đặt trên Vercel." : undefined} onClick={() => test(k)}>
+    <Button size="sm" disabled={!owner || !!busy || IS_STATIC_DEMO} title={IS_STATIC_DEMO ? "Cần máy chủ Vercel để gửi tin" : undefined} onClick={() => test(k)}>
       {busy === k ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Gửi thử
     </Button>
   );
@@ -193,7 +193,7 @@ export default function SettingsPage() {
                 <p className="flex items-start gap-1.5 text-xs text-ink-soft">
                   <Bell size={13} className="mt-0.5 shrink-0" /> Chuông thông báo trong app luôn bật cho mọi người.
                 </p>
-                {IS_STATIC_DEMO && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Đây là bản xem thử trực tuyến, chưa có máy chủ gửi tin. Gửi thật qua Zalo, Telegram, Email cần bản cài đặt trên Vercel (xem README).</p>}
+                {IS_STATIC_DEMO && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Bản đang chạy trên GitHub Pages chưa có máy chủ gửi tin. Gửi tự động qua Zalo, Telegram, Email cần thêm máy chủ Vercel (xem README).</p>}
                 <div className="flex flex-wrap gap-2 border-t border-line pt-3">
                   <Button size="sm" disabled={!!busy || IS_STATIC_DEMO} onClick={() => runCron("daily-digest")}>
                     {busy === "daily-digest" && <Loader2 size={14} className="animate-spin" />} Chạy thử nhắc việc sáng

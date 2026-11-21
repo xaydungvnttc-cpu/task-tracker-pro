@@ -20,6 +20,18 @@ const firebaseOff = {
   },
 };
 
+// Có file static-demo/firebase.json (cấu hình web app Firebase, công khai được) thì bật đăng nhập + dữ liệu thật.
+let fb = null;
+try {
+  fb = JSON.parse(readFileSync(resolve(here, "firebase.json"), "utf8"));
+} catch {}
+const fbDefine = fb
+  ? Object.fromEntries(
+      Object.entries({ API_KEY: fb.apiKey, AUTH_DOMAIN: fb.authDomain, PROJECT_ID: fb.projectId, STORAGE_BUCKET: fb.storageBucket, MESSAGING_SENDER_ID: fb.messagingSenderId, APP_ID: fb.appId }).map(([k, v]) => [`process.env.NEXT_PUBLIC_FIREBASE_${k}`, JSON.stringify(v ?? "")]),
+    )
+  : {};
+console.log(fb ? `Firebase: ${fb.projectId}` : "Firebase: tắt (chế độ Demo)");
+
 const js = await build({
   entryPoints: [resolve(here, "entry.tsx")],
   bundle: true,
@@ -33,8 +45,9 @@ const js = await build({
   define: {
     "process.env.NODE_ENV": '"production"',
     "process.env.NEXT_PUBLIC_STATIC_DEMO": '"1"',
+    ...fbDefine,
   },
-  plugins: [firebaseOff],
+  plugins: fb ? [] : [firebaseOff],
   logLevel: "warning",
 });
 
