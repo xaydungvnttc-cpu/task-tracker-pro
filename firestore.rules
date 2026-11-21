@@ -1,0 +1,59 @@
+rules_version = '2';
+
+// Áp lại phân quyền của src/lib/rbac.ts ở phía máy chủ Firestore.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function role() { return me().role; }
+    function isOwner() { return signedIn() && role() == 'owner'; }
+    function isManager() { return signedIn() && role() in ['owner', 'manager']; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Người đầu tiên đăng ký trở thành Owner (ghi kèm meta/owner trong cùng batch)
+    match /meta/owner {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && uid == request.auth.uid && (
+        request.resource.data.role == 'member' ||
+        (request.resource.data.role == 'owner'
+          && !exists(/databases/$(database)/documents/meta/owner)
+          && getAfter(/databases/$(database)/documents/meta/owner).data.uid == request.auth.uid)
+      );
+      // Owner sửa mọi người; người khác chỉ sửa hồ sơ mình và không tự đổi vai trò/phòng ban
+      allow update: if isOwner() ||
+        (signedIn() && uid == request.auth.uid && !changed().hasAny(['role', 'department', 'id', 'email']));
+    }
+
+    match /tasks/{taskId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && (
+        role() != 'member' ||
+        // Member hoàn thành việc định kỳ của mình thì được sinh kỳ kế tiếp
+        (request.resource.data.recurrence != null && request.resource.data.assigneeId == request.auth.uid)
+      );
+      allow delete: if isManager();
+      allow update: if isManager()
+        || (role() == 'editor' && (resource.data.createdBy == request.auth.uid || resource.data.assigneeId == request.auth.uid))
+        || (resource.data.assigneeId == request.auth.uid
+            && changed().hasOnly(['status', 'checklist', 'outputLinks', 'comments', 'completedAt', 'updatedAt', 'recurrenceSpawned']))
+        // Ai cũng được bình luận
+        || (signedIn() && changed().hasOnly(['comments', 'updatedAt']));
+    }
+
+    match /notifications/{id} {
+      allow create: if signedIn();
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid && changed().hasOnly(['read']);
+    }
+
+    // Token tích hợp: chỉ Owner (server dùng Admin SDK nên không bị chặn)
+    match /settings/{doc} {
+      allow read, write: if isOwner();
+    }
+  }
+}
