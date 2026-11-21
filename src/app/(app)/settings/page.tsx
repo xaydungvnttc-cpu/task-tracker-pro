@@ -99,9 +99,18 @@ export default function SettingsPage() {
 
         {owner && (
           <>
-            <Channel icon={<MessageCircle size={18} className="text-blue-500" />} title="Zalo (Webhook / Zalo OA)" enabled={cfg.zalo.enabled} onToggle={(v) => set("zalo", { enabled: v })} action={testBtn("zalo")}>
-              <Segmented value={cfg.zalo.mode} onChange={(v) => set("zalo", { mode: v })} options={[{ value: "webhook", label: "Webhook URL" }, { value: "oa", label: "Zalo OA API" }]} />
-              {cfg.zalo.mode === "webhook" ? (
+            <Channel icon={<MessageCircle size={18} className="text-blue-500" />} title="Zalo" enabled={cfg.zalo.enabled} onToggle={(v) => set("zalo", { enabled: v })} action={testBtn("zalo")}>
+              <Segmented value={cfg.zalo.mode} onChange={(v) => set("zalo", { mode: v })} options={[{ value: "bot", label: "Zalo Bot" }, { value: "webhook", label: "Webhook URL" }, { value: "oa", label: "Zalo OA API" }]} />
+              {cfg.zalo.mode === "bot" ? (
+                <>
+                  <Field label="Bot Token" hint="Tạo bot trong Zalo: tìm Zalo Bot Manager, bấm Tạo bot. Token được gửi về tin nhắn Zalo của anh/chị">
+                    <Input type="password" value={cfg.zalo.botToken} onChange={(e) => set("zalo", { botToken: e.target.value.trim() })} placeholder="1234567890:abc..." />
+                  </Field>
+                  <Field label="Người nhận (chat_id)" hint="Tự điền: ai nhắn một tin cho bot sẽ được thêm vào ở lần chạy kế tiếp. Muốn bỏ ai thì xóa mã của người đó">
+                    <Input value={cfg.zalo.botChatIds} onChange={(e) => set("zalo", { botChatIds: e.target.value })} placeholder="Để trống, hệ thống tự điền" />
+                  </Field>
+                </>
+              ) : cfg.zalo.mode === "webhook" ? (
                 <Field label="Webhook URL" hint="URL nhận JSON {title, text, url}, ví dụ từ Zalo Bot, n8n, Make để đẩy vào nhóm Zalo">
                   <Input value={cfg.zalo.webhookUrl} onChange={(e) => set("zalo", { webhookUrl: e.target.value })} placeholder="https://..." />
                 </Field>
@@ -194,7 +203,7 @@ export default function SettingsPage() {
                 <p className="flex items-start gap-1.5 text-xs text-ink-soft">
                   <Bell size={13} className="mt-0.5 shrink-0" /> Chuông thông báo trong app luôn bật cho mọi người.
                 </p>
-                {IS_STATIC_DEMO && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Bản đang chạy trên GitHub Pages chưa có máy chủ gửi tin. Gửi tự động qua Zalo, Telegram, Email cần thêm máy chủ Vercel (xem README).</p>}
+                {IS_STATIC_DEMO && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Nhắc việc 8:00 sáng và báo cáo 20:00 Chủ nhật được gửi tự động qua lịch chạy GitHub (bật Zalo Bot ở trên rồi bấm Lưu). Báo tức thì khi giao việc, nhắc tên hiện ở chuông trong app.</p>}
                 <div className="flex flex-wrap gap-2 border-t border-line pt-3">
                   <Button size="sm" disabled={!!busy || IS_STATIC_DEMO} onClick={() => runCron("daily-digest")}>
                     {busy === "daily-digest" && <Loader2 size={14} className="animate-spin" />} Chạy thử nhắc việc sáng

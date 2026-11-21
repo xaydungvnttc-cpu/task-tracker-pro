@@ -8,3 +8,4 @@ next-env.d.ts
 .vercel
 static-demo/dist
 static-demo/pages
+.cron

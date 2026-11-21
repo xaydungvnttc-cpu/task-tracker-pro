@@ -77,7 +77,7 @@ export interface AppNotification {
 export type WebhookType = "lark" | "slack" | "discord" | "custom";
 
 export interface NotificationConfig {
-  zalo: { enabled: boolean; mode: "webhook" | "oa"; webhookUrl: string; oaAccessToken: string; oaUserIds: string };
+  zalo: { enabled: boolean; mode: "bot" | "webhook" | "oa"; botToken: string; botChatIds: string; webhookUrl: string; oaAccessToken: string; oaUserIds: string };
   telegram: { enabled: boolean; botToken: string; chatId: string };
   email: {
     enabled: boolean;

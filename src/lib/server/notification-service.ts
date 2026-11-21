@@ -66,8 +66,22 @@ async function post(url: string, body: unknown, headers: Record<string, string> 
   return text;
 }
 
+/** Zalo Bot (bot-api.zaloplatforms.com): gửi tới từng người đã nhắn cho bot (chat_id) */
+export const ZALO_BOT_API = "https://bot-api.zaloplatforms.com/bot";
+export const splitIds = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+
 async function sendZalo(c: NotificationConfig["zalo"], m: OutgoingMessage) {
   const text = toText(m).slice(0, 1900); // Zalo giới hạn 2000 ký tự
+  if (c.mode === "bot") {
+    const ids = splitIds(c.botChatIds);
+    if (!c.botToken) throw new Error("Thiếu Bot Token");
+    if (!ids.length) throw new Error("Chưa có ai nhắn cho bot. Mở Zalo, nhắn một tin cho bot rồi chạy lại");
+    for (const chatId of ids) {
+      const res = JSON.parse(await post(`${ZALO_BOT_API}${c.botToken}/sendMessage`, { chat_id: chatId, text }));
+      if (!res.ok) throw new Error(`Zalo Bot: ${res.description ?? res.message ?? JSON.stringify(res).slice(0, 150)}`);
+    }
+    return;
+  }
   if (c.mode === "webhook") {
     if (!c.webhookUrl) throw new Error("Thiếu Webhook URL");
     await post(c.webhookUrl, { title: m.title, text, url: m.url });

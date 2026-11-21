@@ -2,7 +2,7 @@ import type { NotificationConfig } from "./types";
 
 export function defaultConfig(): NotificationConfig {
   return {
-    zalo: { enabled: false, mode: "webhook", webhookUrl: "", oaAccessToken: "", oaUserIds: "" },
+    zalo: { enabled: false, mode: "bot", botToken: "", botChatIds: "", webhookUrl: "", oaAccessToken: "", oaUserIds: "" },
     telegram: { enabled: false, botToken: "", chatId: "" },
     email: { enabled: false, provider: "resend", from: "", to: "", resendApiKey: "", smtpHost: "", smtpPort: "587", smtpUser: "", smtpPass: "" },
     webhooks: [],

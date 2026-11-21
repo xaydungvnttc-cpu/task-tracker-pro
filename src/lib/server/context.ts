@@ -15,8 +15,16 @@ const env = (k: string) => process.env[k] ?? "";
 /** Cấu hình từ biến môi trường: kênh nào có token thì tự bật */
 function envConfig(): NotificationConfig {
   const c = withDefaults(null);
-  if (env("ZALO_WEBHOOK_URL") || env("ZALO_OA_ACCESS_TOKEN"))
-    c.zalo = { enabled: true, mode: env("ZALO_WEBHOOK_URL") ? "webhook" : "oa", webhookUrl: env("ZALO_WEBHOOK_URL"), oaAccessToken: env("ZALO_OA_ACCESS_TOKEN"), oaUserIds: env("ZALO_OA_USER_IDS") };
+  if (env("ZALO_BOT_TOKEN") || env("ZALO_WEBHOOK_URL") || env("ZALO_OA_ACCESS_TOKEN"))
+    c.zalo = {
+      enabled: true,
+      mode: env("ZALO_BOT_TOKEN") ? "bot" : env("ZALO_WEBHOOK_URL") ? "webhook" : "oa",
+      botToken: env("ZALO_BOT_TOKEN"),
+      botChatIds: env("ZALO_BOT_CHAT_IDS"),
+      webhookUrl: env("ZALO_WEBHOOK_URL"),
+      oaAccessToken: env("ZALO_OA_ACCESS_TOKEN"),
+      oaUserIds: env("ZALO_OA_USER_IDS"),
+    };
   if (env("TELEGRAM_BOT_TOKEN")) c.telegram = { enabled: true, botToken: env("TELEGRAM_BOT_TOKEN"), chatId: env("TELEGRAM_CHAT_ID") };
   const provider = env("EMAIL_PROVIDER") === "smtp" ? "smtp" : "resend";
   if (env("RESEND_API_KEY") || env("SMTP_HOST"))
