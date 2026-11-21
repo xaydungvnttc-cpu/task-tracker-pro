@@ -20,4 +20,6 @@ export const can = {
   manageMembers: (u: User) => u.role === "owner",
   manageIntegrations: (u: User) => u.role === "owner",
   viewReports: (u: User) => u.role === "owner" || u.role === "manager",
+  /** Tạo, sửa dự án và mốc tiến độ */
+  manageProjects: (u: User) => u.role === "owner" || u.role === "manager",
 };

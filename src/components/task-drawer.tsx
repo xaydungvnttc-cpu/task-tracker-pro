@@ -5,7 +5,7 @@ import { AtSign, Link2, Plus, Repeat, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useApp } from "./app-provider";
 import { Avatar, Button, ConfirmButton, Drawer, Field, Input, ProgressBar, Segmented, Select, Textarea, Toggle } from "./ui";
-import { DEPARTMENTS, FREQ_LABEL, STATUS_LABEL, STATUS_ORDER, TIME_TYPE_LABEL, WEEKDAY_SHORT } from "@/lib/constants";
+import { DEPARTMENTS, OFFICE, OFFICE_LABEL, FREQ_LABEL, STATUS_LABEL, STATUS_ORDER, TIME_TYPE_LABEL, WEEKDAY_SHORT } from "@/lib/constants";
 import { addDays, formatDateTime, weekday } from "@/lib/dates";
 import { can } from "@/lib/rbac";
 import { newId, nextOccurrence, progressOf } from "@/lib/tasks";
@@ -41,7 +41,7 @@ function blankTask(createdBy: string, department: string, today: string, preset?
 }
 
 export function TaskDrawer() {
-  const { drawer, closeDrawer, tasks, me, users, today, saveTask, deleteTask, addComment, userById } = useApp();
+  const { drawer, closeDrawer, tasks, projects, projectFilter, me, users, today, saveTask, deleteTask, addComment, userById } = useApp();
   const stored = drawer?.taskId ? tasks.find((t) => t.id === drawer.taskId) : undefined;
   const [draft, setDraft] = useState<Task | null>(null);
   const [comment, setComment] = useState("");
@@ -50,7 +50,14 @@ export function TaskDrawer() {
   // Mở ngăn kéo thì nạp bản nháp; dữ liệu thay đổi từ máy khác không ghi đè chỗ đang sửa
   useEffect(() => {
     if (!drawer || !me) return setDraft(null);
-    if (drawer.isNew) setDraft(blankTask(me.id, me.department, today, { assigneeId: can.assignOthers(me) ? null : me.id, ...drawer.preset }));
+    if (drawer.isNew)
+      setDraft(
+        blankTask(me.id, me.department, today, {
+          assigneeId: can.assignOthers(me) ? null : me.id,
+          projectId: projectFilter === "all" || projectFilter === OFFICE ? null : projectFilter,
+          ...drawer.preset,
+        }),
+      );
     else if (stored) setDraft(stored);
     setComment("");
   }, [drawer?.taskId, drawer?.isNew]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -121,7 +128,29 @@ export function TaskDrawer() {
           autoFocus={isNew}
         />
 
+        {draft.directive && (
+          <div className="rounded-lg bg-violet-50 px-3 py-2 text-xs font-medium text-violet-800 dark:bg-violet-950/40 dark:text-violet-300">
+            Chỉ đạo của Ban Tổng Giám đốc: người nhận báo kết quả bằng bình luận hoặc link bàn giao.
+          </div>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Dự án">
+            <Select value={draft.projectId ?? ""} disabled={!fullEdit} onChange={(e) => set({ projectId: e.target.value || null })}>
+              <option value="">{OFFICE_LABEL}</option>
+              {projects
+                .filter((p) => p.status !== "done" || p.id === draft.projectId)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} · {p.name}
+                  </option>
+                ))}
+            </Select>
+          </Field>
+          <Field label="Loại việc">
+            <div className="flex h-10 items-center">
+              <Toggle checked={!!draft.directive} disabled={!fullEdit || !can.viewReports(me)} onChange={(v) => set({ directive: v })} label="Chỉ đạo của Ban TGĐ" />
+            </div>
+          </Field>
           <Field label="Trạng thái">
             <Select value={draft.status} disabled={!progressEdit} onChange={(e) => set({ status: e.target.value as Task["status"] })}>
               {STATUS_ORDER.map((s) => (

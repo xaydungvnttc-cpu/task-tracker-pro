@@ -1,8 +1,9 @@
-import type { AppNotification, NotificationConfig, Task, User } from "../types";
+import type { AppNotification, NotificationConfig, Project, Task, User } from "../types";
 
 export interface Snapshot {
   users: User[];
   tasks: Task[];
+  projects: Project[];
   notifications: AppNotification[];
 }
 
@@ -15,6 +16,8 @@ export interface DataBackend {
   subscribe(userId: string, cb: (patch: Partial<Snapshot>) => void): () => void;
   saveTask(t: Task): Promise<void>;
   deleteTask(id: string): Promise<void>;
+  saveProject(p: Project): Promise<void>;
+  deleteProject(id: string): Promise<void>;
   saveUser(u: User): Promise<void>;
   addNotifications(list: AppNotification[]): Promise<void>;
   markRead(ids: string[]): Promise<void>;

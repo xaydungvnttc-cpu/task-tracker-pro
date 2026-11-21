@@ -239,10 +239,11 @@ export default function SettingsPage() {
 
 /** Owner nạp hoặc xóa bộ khoảng 100 việc mẫu ngành xây dựng trên dữ liệu thật */
 function SampleData() {
-  const { me, users, tasks, today, toast } = useApp();
+  const { me, users, tasks, projects, today, toast } = useApp();
   const [busy, setBusy] = useState(false);
   const sampleTasks = tasks.filter((t) => t.id.startsWith(SAMPLE_PREFIX));
   const sampleUsers = users.filter((u) => u.id.startsWith(SAMPLE_PREFIX));
+  const sampleProjects = projects.filter((p) => p.id.startsWith(SAMPLE_PREFIX));
   const run = async (fn: () => Promise<string>) => {
     setBusy(true);
     try {
@@ -257,19 +258,19 @@ function SampleData() {
       <CardTitle>Dữ liệu mẫu</CardTitle>
       <div className="space-y-3 p-4 text-sm text-ink-soft">
         <p>
-          Nạp khoảng 100 đầu việc mẫu của một dự án chung cư (thi công, vật tư, thanh toán, an toàn, chất lượng) kèm 9 nhân sự mẫu, để cả đội xem thử ngay trên dữ liệu thật. Việc của Giám đốc dự án sẽ giao cho anh/chị. Dùng xong bấm Xóa, việc anh/chị tự tạo vẫn giữ nguyên.
+          Nạp 3 dự án mẫu (chung cư, nhà xưởng, trường học) với khoảng 130 đầu việc, mốc hợp đồng, sổ chỉ đạo và 12 nhân sự mẫu, để xem thử ngay trên dữ liệu thật. Vai Tổng Giám đốc trong bộ mẫu là anh/chị. Nạp lại sẽ đưa việc mẫu về như ban đầu. Dùng xong bấm Xóa, dữ liệu anh/chị tự tạo vẫn giữ nguyên.
         </p>
-        {sampleTasks.length > 0 && <p className="font-medium text-ink">Đang có {sampleTasks.length} việc mẫu, {sampleUsers.length} nhân sự mẫu.</p>}
+        {sampleTasks.length > 0 && <p className="font-medium text-ink">Đang có {sampleProjects.length} dự án mẫu, {sampleTasks.length} việc mẫu, {sampleUsers.length} nhân sự mẫu.</p>}
         <div className="flex flex-wrap gap-2">
-          <Button variant="primary" disabled={busy || sampleTasks.length > 0} onClick={() => run(async () => `Đã nạp ${await importSampleData(me!.id, today)} việc mẫu`)}>
-            {busy ? <Loader2 size={16} className="animate-spin" /> : <Database size={16} />} Nạp dữ liệu mẫu
+          <Button variant="primary" disabled={busy} onClick={() => run(async () => `Đã nạp ${await importSampleData(me!.id, today)} việc mẫu`)}>
+            {busy ? <Loader2 size={16} className="animate-spin" /> : <Database size={16} />} {sampleTasks.length ? "Nạp lại dữ liệu mẫu" : "Nạp dữ liệu mẫu"}
           </Button>
-          {(sampleTasks.length > 0 || sampleUsers.length > 0) && (
+          {(sampleTasks.length > 0 || sampleUsers.length > 0 || sampleProjects.length > 0) && (
             <ConfirmButton
               disabled={busy}
               label={<><Trash2 size={16} /> Xóa dữ liệu mẫu</>}
               confirmLabel="Bấm lần nữa để xóa hết việc mẫu"
-              onConfirm={() => run(async () => (await clearSampleData(sampleTasks.map((t) => t.id), sampleUsers.map((u) => u.id)), "Đã xóa dữ liệu mẫu"))}
+              onConfirm={() => run(async () => (await clearSampleData(sampleTasks.map((t) => t.id), sampleUsers.map((u) => u.id), sampleProjects.map((p) => p.id)), "Đã xóa dữ liệu mẫu"))}
             />
           )}
         </div>

@@ -37,9 +37,37 @@ export interface Recurrence {
   weekdays?: number[]; // 0 = CN ... 6 = T7, dùng cho weekly
 }
 
+/** Mốc tiến độ theo hợp đồng, ví dụ "Cất nóc khối A" dự kiến 15/12, thực tế 20/12 → chậm 5 ngày */
+export interface Milestone {
+  id: string;
+  name: string;
+  plannedDate: string; // YYYY-MM-DD
+  actualDate: string | null;
+}
+
+export type ProjectStatus = "active" | "paused" | "done";
+
+export interface Project {
+  id: string;
+  code: string; // mã ngắn hiện trên thẻ việc, ví dụ "SH"
+  name: string;
+  client: string; // Chủ đầu tư
+  directorId: string | null; // Giám đốc dự án
+  siteManagerId: string | null; // Chỉ huy trưởng
+  startDate: string | null;
+  endDate: string | null; // ngày bàn giao theo hợp đồng
+  status: ProjectStatus;
+  milestones: Milestone[];
+  color: string;
+}
+
 export interface Task {
   id: string;
   title: string;
+  /** Dự án của việc; null hoặc thiếu = Khối văn phòng công ty */
+  projectId?: string | null;
+  /** Chỉ đạo của Chủ tịch, Ban TGĐ: hiện riêng ở Sổ chỉ đạo */
+  directive?: boolean;
   description: string;
   assigneeId: string | null;
   watcherIds: string[];

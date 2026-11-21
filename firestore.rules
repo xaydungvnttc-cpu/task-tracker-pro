@@ -47,6 +47,12 @@ service cloud.firestore {
         || (signedIn() && changed().hasOnly(['comments', 'updatedAt']));
     }
 
+    // Dự án và mốc hợp đồng: ai đăng nhập cũng xem, Quản trị và Quản lý sửa
+    match /projects/{projectId} {
+      allow read: if signedIn();
+      allow write: if isManager();
+    }
+
     match /notifications/{id} {
       allow create: if signedIn();
       allow read: if signedIn() && resource.data.userId == request.auth.uid;

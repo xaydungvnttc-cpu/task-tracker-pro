@@ -11,7 +11,7 @@ import type { AuthBackend, DataBackend, Snapshot } from "./types";
  * Chế độ Demo: toàn bộ dữ liệu nằm trong localStorage của trình duyệt.
  * Mở 2 tab cùng lúc vẫn đồng bộ nhờ sự kiện "storage".
  */
-const DATA_KEY = "ttp:data:v3";
+const DATA_KEY = "ttp:data:v4";
 const SESSION_KEY = "ttp:session";
 const CRED_KEY = "ttp:credentials";
 const INTEGRATION_KEY = "ttp:integrations";
@@ -73,7 +73,7 @@ export const localData: DataBackend = {
   subscribe(userId, cb) {
     const push = () => {
       const s = read();
-      cb({ users: s.users, tasks: s.tasks, notifications: s.notifications.filter((n) => n.userId === userId) });
+      cb({ users: s.users, tasks: s.tasks, projects: s.projects ?? [], notifications: s.notifications.filter((n) => n.userId === userId) });
     };
     listeners.add(push);
     push();
@@ -91,6 +91,19 @@ export const localData: DataBackend = {
   async deleteTask(id) {
     write((s) => {
       s.tasks = s.tasks.filter((t) => t.id !== id);
+    });
+  },
+  async saveProject(p) {
+    write((s) => {
+      s.projects = s.projects ?? [];
+      const i = s.projects.findIndex((x) => x.id === p.id);
+      if (i >= 0) s.projects[i] = p;
+      else s.projects.push(p);
+    });
+  },
+  async deleteProject(id) {
+    write((s) => {
+      s.projects = (s.projects ?? []).filter((p) => p.id !== id);
     });
   },
   async saveUser(u) {

@@ -3,6 +3,9 @@
 import clsx from "clsx";
 import {
   Bell,
+  Building2,
+  Gauge,
+  ScrollText,
   CalendarDays,
   CalendarCheck,
   Grid2x2,
@@ -24,19 +27,21 @@ import { useApp } from "@/components/app-provider";
 import { TaskDrawer } from "@/components/task-drawer";
 import { Avatar, Button, Select } from "@/components/ui";
 import { auth } from "@/lib/backend";
-import { ROLE_LABEL, SCOPE_LABEL } from "@/lib/constants";
-import { DEMO_PROJECT } from "@/lib/seed";
+import { OFFICE, OFFICE_LABEL, ROLE_LABEL, SCOPE_LABEL } from "@/lib/constants";
 import { formatDateTime } from "@/lib/dates";
 import { can } from "@/lib/rbac";
-import type { Scope } from "@/lib/types";
+import type { Scope, User } from "@/lib/types";
 
-const NAV = [
+const NAV: { href: string; label: string; icon: typeof Bell; mobile: boolean; show?: (u: User) => boolean }[] = [
+  { href: "/portfolio", label: "Điều hành công ty", icon: Gauge, mobile: false, show: can.viewReports },
   { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard, mobile: true },
   { href: "/today", label: "Hôm nay", icon: CalendarCheck, mobile: true },
   { href: "/tasks", label: "Danh sách việc", icon: ListTodo, mobile: false },
+  { href: "/directives", label: "Sổ chỉ đạo", icon: ScrollText, mobile: false },
   { href: "/matrix", label: "Ma trận ưu tiên", icon: Grid2x2, mobile: true },
   { href: "/kanban", label: "Bảng tiến độ", icon: KanbanSquare, mobile: true },
   { href: "/calendar", label: "Lịch biểu", icon: CalendarDays, mobile: true },
+  { href: "/projects", label: "Dự án", icon: Building2, mobile: false },
   { href: "/members", label: "Thành viên", icon: Users, mobile: false },
   { href: "/settings", label: "Cài đặt tích hợp", icon: Settings, mobile: false },
 ];
@@ -76,14 +81,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <X size={18} />
           </button>
         </div>
-        {mode === "demo" && (
-          <div className="mx-3 mb-1 rounded-lg bg-muted px-3 py-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Dự án</div>
-            <div className="text-xs font-medium leading-snug text-ink">{DEMO_PROJECT}</div>
-          </div>
-        )}
-        <nav className="flex-1 space-y-0.5 px-2 py-2">
-          {NAV.map((n) => (
+        <div className="mx-3 mb-1">
+          <ProjectPicker />
+        </div>
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
+          {NAV.filter((n) => !n.show || n.show(me)).map((n) => (
             <Link
               key={n.href}
               href={n.href}
@@ -129,6 +131,26 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       <TaskDrawer />
     </div>
+  );
+}
+
+/** Chọn dự án: mọi màn hình (tổng quan, danh sách, bảng tiến độ, lịch…) chỉ hiện việc của dự án đang chọn */
+function ProjectPicker() {
+  const { projects, projectFilter, setProjectFilter } = useApp();
+  const active = projects.filter((p) => p.status !== "done" || p.id === projectFilter).sort((a, b) => a.name.localeCompare(b.name, "vi"));
+  return (
+    <label className="block rounded-lg bg-muted px-3 py-2">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Đang xem</span>
+      <Select className="mt-1 h-8 border-0 bg-surface py-0 text-xs font-semibold" value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} aria-label="Chọn dự án">
+        <option value="all">Cả công ty</option>
+        {active.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.code} · {p.name}
+          </option>
+        ))}
+        <option value={OFFICE}>{OFFICE_LABEL}</option>
+      </Select>
+    </label>
   );
 }
 

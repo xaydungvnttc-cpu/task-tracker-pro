@@ -39,7 +39,8 @@ export function QuickStatusButton({ task }: { task: Task }) {
 
 /** Thẻ task dùng chung cho Hôm nay, Kanban, Eisenhower, Danh sách */
 export function TaskCard({ task, compact, showStatus = true }: { task: Task; compact?: boolean; showStatus?: boolean }) {
-  const { openTask, userById, today } = useApp();
+  const { openTask, userById, projectById, projectFilter, today } = useApp();
+  const project = projectFilter === "all" ? projectById(task.projectId) : undefined;
   const pct = progressOf(task);
   const overdue = isOverdue(task, today);
   return (
@@ -56,6 +57,12 @@ export function TaskCard({ task, compact, showStatus = true }: { task: Task; com
         <div className="min-w-0 flex-1">
           <div className={clsx("text-sm font-medium leading-snug text-ink", task.status === "done" && "line-through")}>{task.title}</div>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {project && (
+              <span className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: project.color }} title={project.name}>
+                {project.code}
+              </span>
+            )}
+            {task.directive && <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800 dark:bg-violet-950 dark:text-violet-300">Chỉ đạo</span>}
             <PriorityBadges task={task} />
             {showStatus && <StatusBadge status={task.status} />}
             {task.recurrence && <Repeat size={12} className="text-ink-soft" aria-label="Việc định kỳ" />}

@@ -5,8 +5,9 @@ import { auth, data } from "@/lib/backend";
 import { todayISO, nowISO } from "@/lib/dates";
 import { can } from "@/lib/rbac";
 import { STATUS_LABEL } from "@/lib/constants";
+import { applyProject } from "@/lib/projects";
 import { applyScope, buildNextInstance, findMentions, newId, shouldSpawn } from "@/lib/tasks";
-import type { AppNotification, NotifyEvent, Scope, Task, TaskStatus, User } from "@/lib/types";
+import type { AppNotification, NotifyEvent, Project, Scope, Task, TaskStatus, User } from "@/lib/types";
 
 interface Toast {
   id: string;
@@ -20,7 +21,14 @@ interface AppState {
   me: User | null;
   users: User[];
   tasks: Task[];
-  /** Task đã lọc theo phạm vi đang chọn: mọi màn hình dùng danh sách này */
+  projects: Project[];
+  /** Dự án đang chọn ở thanh trên cùng: "all" = cả công ty, "office" = khối văn phòng, hoặc id dự án */
+  projectFilter: string;
+  setProjectFilter: (id: string) => void;
+  projectById: (id: string | null | undefined) => Project | undefined;
+  saveProject: (p: Project) => Promise<boolean>;
+  deleteProject: (p: Project) => Promise<void>;
+  /** Task đã lọc theo phạm vi và dự án đang chọn: mọi màn hình dùng danh sách này */
   scoped: Task[];
   notifications: AppNotification[];
   today: string;
@@ -54,12 +62,15 @@ export function useApp(): AppState {
 }
 
 const SCOPE_KEY = "ttp:scope";
+const PROJECT_KEY = "ttp:project";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [me, setMe] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectFilter, setProjectFilterState] = useState("all");
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [scope, setScopeState] = useState<Scope>("all");
   const [drawer, setDrawer] = useState<AppState["drawer"]>(null);
@@ -76,6 +87,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const s = localStorage.getItem(SCOPE_KEY) as Scope | null;
       if (s) setScopeState(s);
+      const pf = localStorage.getItem(PROJECT_KEY);
+      if (pf) setProjectFilterState(pf);
     } catch {
       /* bỏ qua */
     }
@@ -85,6 +98,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setScopeState(s);
     try {
       localStorage.setItem(SCOPE_KEY, s);
+    } catch {
+      /* bỏ qua */
+    }
+  }, []);
+
+  const setProjectFilter = useCallback((id: string) => {
+    setProjectFilterState(id);
+    try {
+      localStorage.setItem(PROJECT_KEY, id);
     } catch {
       /* bỏ qua */
     }
@@ -104,6 +126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return data.subscribe(me.id, (p) => {
       if (p.users) setUsers(p.users);
       if (p.tasks) setTasks(p.tasks);
+      if (p.projects) setProjects(p.projects);
       if (p.notifications) setNotifications(p.notifications);
     });
   }, [me?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -115,6 +138,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const userById = useCallback((id: string | null | undefined) => users.find((u) => u.id === id), [users]);
+  const projectById = useCallback((id: string | null | undefined) => (id ? projects.find((p) => p.id === id) : undefined), [projects]);
+
+  const saveProject = useCallback(
+    async (p: Project) => {
+      if (!me || !can.manageProjects(me)) {
+        toast("Chỉ Quản trị hoặc Quản lý được sửa dự án", "error");
+        return false;
+      }
+      try {
+        await data.saveProject(p);
+        return true;
+      } catch (e) {
+        toast("Lưu dự án lỗi: " + (e as Error).message, "error");
+        return false;
+      }
+    },
+    [me, toast],
+  );
+
+  const deleteProject = useCallback(
+    async (p: Project) => {
+      if (!me || !can.manageProjects(me)) return;
+      const n = tasks.filter((t) => t.projectId === p.id).length;
+      if (n) return toast(`Dự án còn ${n} việc. Muốn ẩn dự án thì đổi trạng thái sang Đã bàn giao`, "error");
+      await data.deleteProject(p.id);
+      toast("Đã xóa dự án", "success");
+    },
+    [me, tasks, toast],
+  );
 
   /* ---------- Thông báo ---------- */
 
@@ -261,7 +313,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (ids.length) await data.markRead(ids);
   }, []);
 
-  const scoped = useMemo(() => applyScope(tasks, scope, me), [tasks, scope, me]);
+  // Dự án đang chọn đã bị xóa thì quay về cả công ty
+  const pf = projectFilter === "all" || projectFilter === "office" || projects.some((p) => p.id === projectFilter) ? projectFilter : "all";
+  const scoped = useMemo(() => applyProject(applyScope(tasks, scope, me), pf), [tasks, scope, me, pf]);
 
   const value: AppState = {
     ready,
@@ -269,6 +323,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     me,
     users,
     tasks,
+    projects,
+    projectFilter: pf,
+    setProjectFilter,
+    projectById,
+    saveProject,
+    deleteProject,
     scoped,
     notifications,
     today,

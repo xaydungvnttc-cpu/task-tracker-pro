@@ -1,8 +1,8 @@
 import { addDays, addMonths, startOfWeek } from "./dates";
-import type { AppNotification, Task, User } from "./types";
+import type { AppNotification, Project, Task, User } from "./types";
 
 export const SEED_USERS: User[] = [
-  { id: "u1", name: "Nguyễn Văn An", email: "an@demo.vn", role: "owner", department: "Ban Chỉ huy công trường", title: "Giám đốc dự án", color: "#2563eb" },
+  { id: "u1", name: "Nguyễn Văn An", email: "an@demo.vn", role: "owner", department: "Ban Tổng Giám đốc", title: "Tổng Giám đốc", color: "#2563eb" },
   { id: "u2", name: "Trần Thị Bình", email: "binh@demo.vn", role: "manager", department: "Kỹ thuật thi công", title: "Chỉ huy trưởng công trường", color: "#db2777" },
   { id: "u3", name: "Lê Hoàng Cường", email: "cuong@demo.vn", role: "manager", department: "Kế hoạch - Vật tư", title: "Trưởng ban Kế hoạch - Vật tư", color: "#059669" },
   { id: "u4", name: "Phạm Minh Dũng", email: "dung@demo.vn", role: "editor", department: "Kỹ thuật thi công", title: "Kỹ sư giám sát", color: "#d97706" },
@@ -12,14 +12,35 @@ export const SEED_USERS: User[] = [
   { id: "u8", name: "Bùi Đức Long", email: "long@demo.vn", role: "editor", department: "Kỹ thuật thi công", title: "Kỹ sư MEP (điện nước)", color: "#4f46e5" },
   { id: "u9", name: "Ngô Thị Mai", email: "mai@demo.vn", role: "member", department: "An toàn - Chất lượng (HSE, QA/QC)", title: "Cán bộ an toàn HSE", color: "#0d9488" },
   { id: "u10", name: "Trịnh Văn Nam", email: "nam@demo.vn", role: "member", department: "Kỹ thuật thi công", title: "Kỹ sư trắc đạc", color: "#ea580c" },
+  { id: "u11", name: "Phan Quốc Khánh", email: "khanh@demo.vn", role: "manager", department: "Ban Chỉ huy công trường", title: "Giám đốc dự án Phố Nối, Ngọc Thụy", color: "#9333ea" },
+  { id: "u12", name: "Lý Thanh Tâm", email: "tam@demo.vn", role: "editor", department: "Ban Chỉ huy công trường", title: "Chỉ huy trưởng Nhà xưởng Phố Nối", color: "#be123c" },
+  { id: "u13", name: "Đặng Minh Tuấn", email: "tuan@demo.vn", role: "editor", department: "Ban Chỉ huy công trường", title: "Chỉ huy trưởng Trường Ngọc Thụy", color: "#15803d" },
 ];
 
-/** Dự án giả định dùng cho bản Demo */
-export const DEMO_PROJECT = "Chung cư Sông Hồng Residence · Gói thầu thi công phần thân";
 
 /** Dữ liệu mẫu tính theo ngày hôm nay, để mở app lúc nào cũng thấy đủ quá hạn, sắp hạn, đã xong */
-export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifications: AppNotification[] } {
+export function buildSeed(today: string): { users: User[]; projects: Project[]; tasks: Task[]; notifications: AppNotification[] } {
   const d = (n: number) => addDays(today, n);
+  const ms = (id: string, name: string, planned: number, actual: number | null) => ({ id, name, plannedDate: d(planned), actualDate: actual === null ? null : d(actual) });
+
+  // 3 dự án mẫu: Sông Hồng chậm nhẹ (vàng), Phố Nối chậm lắp dựng thép (đỏ), Ngọc Thụy đúng tiến độ (xanh)
+  const projects: Project[] = [
+    {
+      id: "p1", code: "SH", name: "Chung cư Sông Hồng Residence", client: "Công ty CP Đầu tư Sông Hồng", directorId: "u2", siteManagerId: "u4",
+      startDate: d(-210), endDate: d(240), status: "active", color: "#2563eb",
+      milestones: [ms("m1", "Xong phần móng", -150, -152), ms("m2", "Xong phần thô tầng 1-4", -30, -27), ms("m3", "Xong phần thô tầng 5", -3, null), ms("m4", "Cất nóc khối A", 60, null), ms("m5", "Bàn giao", 240, null)],
+    },
+    {
+      id: "p2", code: "PN", name: "Nhà xưởng KCN Phố Nối B", client: "Công ty TNHH Cơ khí Hưng Yên", directorId: "u11", siteManagerId: "u12",
+      startDate: d(-75), endDate: d(80), status: "active", color: "#dc2626",
+      milestones: [ms("m1", "Xong móng cột", -40, -38), ms("m2", "Lắp dựng xong kết cấu thép", -10, null), ms("m3", "Lợp mái, bao che", 25, null), ms("m4", "Bàn giao", 80, null)],
+    },
+    {
+      id: "p3", code: "NT", name: "Trường THCS Ngọc Thụy", client: "Ban QLDA quận Long Biên", directorId: "u11", siteManagerId: "u13",
+      startDate: d(-32), endDate: d(330), status: "active", color: "#059669",
+      milestones: [ms("m1", "Xong cọc khoan nhồi", 6, null), ms("m2", "Xong móng, giằng móng", 45, null), ms("m3", "Cất nóc", 200, null), ms("m4", "Bàn giao trước năm học mới", 330, null)],
+    },
+  ];
   const at = (n: number, h = 16) => `${d(n)}T${String(h).padStart(2, "0")}:00:00.000Z`;
   const nextMon = addDays(startOfWeek(today), 7);
   const lastMon = addDays(startOfWeek(today), -7);
@@ -47,6 +68,8 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
     comments: [],
     completedAt: null,
     createdBy: "u1",
+    projectId: "p1",
+    directive: false,
     createdAt: at(-14, 2),
     updatedAt: at(-1, 2),
     ...p,
@@ -85,7 +108,7 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
     base({ id: "t8", title: "Lập hồ sơ quản lý chất lượng hạng mục MEP", assigneeId: "u7", watcherIds: ["u2"], department: "An toàn - Chất lượng (HSE, QA/QC)", important: true, timeType: "multi", startDate: d(-10), dueDate: d(20), status: "in_progress" }),
     base({ id: "t9", title: "Gia hạn bảo hiểm mọi rủi ro công trình", department: "Hợp đồng - Thanh toán (QS)", important: true, urgent: true, dueDate: d(2) }),
     base({
-      id: "t10", title: "Chuẩn bị hồ sơ dự thầu gói hạ tầng kỹ thuật", assigneeId: "u3", watcherIds: ["u1"], department: "Kế hoạch - Vật tư", important: true,
+      id: "t10", title: "Chuẩn bị hồ sơ dự thầu gói hạ tầng kỹ thuật", projectId: null, assigneeId: "u3", watcherIds: ["u1"], department: "Kế hoạch - Vật tư", important: true,
       timeType: "multi", startDate: d(-3), dueDate: d(10), status: "in_progress",
       checklist: ck([["Mua HSMT", true], ["Khảo sát hiện trường", true], ["Lập biện pháp thi công", false], ["Lập dự toán dự thầu", false], ["Bảo lãnh dự thầu", false]]),
     }),
@@ -93,8 +116,8 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
       id: "t11", title: "Sửa máy bơm bê tông số 2", assigneeId: "u6", department: "Kế hoạch - Vật tư", urgent: true, dueDate: d(-2), status: "on_hold",
       comments: [{ id: "cm2", userId: "u6", text: "Đang chờ phụ tùng từ nhà cung cấp, dự kiến 3 ngày.", createdAt: at(-1, 3) }],
     }),
-    base({ id: "t12", title: "Họp giao ban đầu tuần", assigneeId: "u1", department: "Ban Chỉ huy công trường", important: true, dueDate: lastMon, status: "done", completedAt: `${lastMon}T03:00:00.000Z`, recurrence: { freq: "weekly", weekdays: [1] }, recurrenceSpawned: true }),
-    base({ id: "t13", title: "Họp giao ban đầu tuần", assigneeId: "u1", department: "Ban Chỉ huy công trường", important: true, dueDate: nextMon, recurrence: { freq: "weekly", weekdays: [1] } }),
+    base({ id: "t12", projectId: null, title: "Họp giao ban đầu tuần", assigneeId: "u1", department: "Ban Chỉ huy công trường", important: true, dueDate: lastMon, status: "done", completedAt: `${lastMon}T03:00:00.000Z`, recurrence: { freq: "weekly", weekdays: [1] }, recurrenceSpawned: true }),
+    base({ id: "t13", projectId: null, title: "Họp giao ban đầu tuần", assigneeId: "u1", department: "Ban Chỉ huy công trường", important: true, dueDate: nextMon, recurrence: { freq: "weekly", weekdays: [1] } }),
     base({ id: "t14", title: "Cập nhật bản vẽ hoàn công tầng 3", assigneeId: "u4", timeType: "none", createdBy: "u4" }),
     base({ id: "t15", title: "Dọn dẹp, sắp xếp kho vật tư tạm", department: "Kế hoạch - Vật tư", dueDate: d(12) }),
     base({ id: "t16", title: "Báo cáo an toàn lao động tháng gửi Chủ đầu tư", assigneeId: "u7", department: "An toàn - Chất lượng (HSE, QA/QC)", important: true, dueDate: d(-2), status: "done", completedAt: at(-3), recurrence: { freq: "monthly" }, recurrenceSpawned: true }),
@@ -147,9 +170,10 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
   ];
 
   // Bộ việc bổ sung (t48 trở đi) cho đủ khoảng 100 đầu việc, phủ đủ các mảng của Ban chỉ huy
-  // Cột: tiêu đề, người làm, phòng ban (chỉ số DEPTS), ngày bắt đầu, hạn chót (số ngày so với hôm nay), trạng thái, cờ (Q = quan trọng, G = gấp), checklist
-  type Row = [string, string | null, number, number | null, number | null, Task["status"], string, string[]?];
-  const DEPTS = ["Ban Chỉ huy công trường", "Kỹ thuật thi công", "Kế hoạch - Vật tư", "Hợp đồng - Thanh toán (QS)", "An toàn - Chất lượng (HSE, QA/QC)"];
+  // Cột: tiêu đề, người làm, phòng ban (chỉ số DEPTS), ngày bắt đầu, hạn chót (số ngày so với hôm nay), trạng thái,
+  // cờ (Q = quan trọng, G = gấp, C = chỉ đạo của Ban TGĐ), checklist, dự án ("" = khối văn phòng, mặc định p1)
+  type Row = [string, string | null, number, number | null, number | null, Task["status"], string, string[]?, string?];
+  const DEPTS = ["Ban Chỉ huy công trường", "Kỹ thuật thi công", "Kế hoạch - Vật tư", "Hợp đồng - Thanh toán (QS)", "An toàn - Chất lượng (HSE, QA/QC)", "Ban Tổng Giám đốc"];
   const rows: Row[] = [
     // Đã hoàn thành (lịch sử)
     ["Bàn giao mặt bằng thi công khối B cho tổ đội", "u2", 1, null, -44, "done", "QG"],
@@ -204,13 +228,50 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
     ["Họp phối hợp thầu phụ MEP và kết cấu tầng 6", "u8", 1, null, 3, "todo", "Q"],
     ["Đo lún, quan trắc công trình lân cận đợt 5", "u10", 1, null, 9, "todo", "Q"],
     ["Rà soát hồ sơ chất lượng phần móng để nghiệm thu giai đoạn", "u7", 4, 2, 16, "todo", "Q"],
-    ["Báo cáo tiến độ tháng gửi Ban Giám đốc", "u1", 0, null, 9, "todo", "Q"],
+    ["Báo cáo tiến độ tháng gửi Ban Giám đốc", "u2", 0, null, 9, "todo", "Q"],
     ["Làm việc với Chủ đầu tư về điều chỉnh mặt bằng tầng hầm", "u1", 0, null, -1, "todo", "QG"],
     ["Cập nhật bản vẽ hoàn công điện nước tầng 4", "u8", 1, null, null, "todo", ""],
     ["Sắp xếp lại bãi tập kết vật liệu khu vực cổng 2", "u6", 2, null, 6, "todo", ""],
     ["Bảo dưỡng máy phát điện dự phòng công trường", "u6", 2, null, 4, "todo", ""],
+    // Sổ chỉ đạo của Tổng Giám đốc
+    ["Báo cáo phương án bù tiến độ phần thô khối A", "u2", 0, null, -1, "in_progress", "QGC"],
+    ["Rà soát hồ sơ thanh toán đợt 3, nộp Chủ đầu tư trong tuần", "u5", 3, null, 3, "todo", "QGC"],
+    ["Đánh giá thầu phụ cốp pha, đề xuất thay thế nếu không đạt", "u2", 0, null, -2, "todo", "QC"],
+    ["Làm việc với nhà cung cấp thép tiền chế về việc giao hàng chậm", "u12", 2, null, -4, "todo", "QGC", undefined, "p2"],
+    ["Bổ sung 2 tổ lắp dựng, tăng ca bù 10 ngày chậm", "u12", 0, -1, 2, "in_progress", "QGC", undefined, "p2"],
+    ["Kiểm tra an toàn cẩu tháp tất cả công trường", "u9", 4, null, -6, "done", "QGC", undefined, ""],
+    ["Lập kế hoạch dòng tiền quý I toàn công ty", "u3", 5, null, 10, "todo", "QC", undefined, ""],
+    ["Chuẩn bị hồ sơ năng lực dự thầu gói trường học Long Biên", "u3", 5, -2, 6, "in_progress", "QC", undefined, ""],
+    // Nhà xưởng KCN Phố Nối B
+    ["Nghiệm thu móng cột nhà xưởng trục A-D", "u12", 1, null, -20, "done", "QG", undefined, "p2"],
+    ["Lắp dựng kèo thép nhịp 1-6", "u12", 1, -15, -5, "in_progress", "QG", ["Lắp cột", "Lắp kèo", "Giằng mái", "Căn chỉnh, siết bu lông"], "p2"],
+    ["Lắp dựng kèo thép nhịp 7-12", "u12", 1, -2, 8, "todo", "Q", undefined, "p2"],
+    ["Đặt hàng tôn lợp và xà gồ đợt 2", "u6", 2, null, -3, "todo", "QG", undefined, "p2"],
+    ["Nhập kho bu lông neo, bản mã", "u6", 2, null, -12, "done", "", undefined, "p2"],
+    ["Hồ sơ thanh toán đợt 1 nhà xưởng", "u5", 3, -8, 2, "in_progress", "Q", undefined, "p2"],
+    ["Kiểm tra an toàn làm việc trên cao khi lắp kèo", "u9", 4, null, 0, "todo", "G", undefined, "p2"],
+    ["Đổ bê tông nền nhà xưởng khu A (1.200 m²)", "u12", 1, 5, 9, "todo", "Q", undefined, "p2"],
+    ["Thí nghiệm kéo, uốn mẫu thép kết cấu", "u7", 4, null, -7, "done", "Q", undefined, "p2"],
+    ["Lập bản vẽ hoàn công móng nhà xưởng", "u10", 1, null, 6, "todo", "", undefined, "p2"],
+    ["Xử lý sai lệch tim cột trục C5 (phiếu NCR-003)", "u7", 4, null, -2, "in_progress", "QG", undefined, "p2"],
+    ["Đối chiếu khối lượng thầu phụ lắp dựng thép", "u5", 3, null, 12, "todo", "", undefined, "p2"],
+    // Trường THCS Ngọc Thụy
+    ["Bàn giao mặt bằng, khởi công trường THCS", "u13", 0, null, -30, "done", "Q", undefined, "p3"],
+    ["Thi công cọc khoan nhồi đợt 1 (24 cọc)", "u13", 1, -25, -10, "done", "QG", undefined, "p3"],
+    ["Thi công cọc khoan nhồi đợt 2 (24 cọc)", "u13", 1, -9, 4, "in_progress", "QG", ["Khoan tạo lỗ", "Hạ lồng thép", "Đổ bê tông cọc", "Nhật ký từng cọc"], "p3"],
+    ["Siêu âm kiểm tra cọc đợt 1", "u7", 4, null, -6, "done", "Q", undefined, "p3"],
+    ["Đào đất hố móng khối lớp học", "u13", 1, 5, 15, "todo", "Q", undefined, "p3"],
+    ["Đặt hàng thép móng 85 tấn", "u6", 2, null, 3, "todo", "QG", undefined, "p3"],
+    ["Hồ sơ tạm ứng hợp đồng", "u5", 3, null, -15, "done", "Q", undefined, "p3"],
+    ["Kế hoạch an toàn khi thi công cạnh trường đang học", "u9", 4, -1, 2, "in_progress", "QG", undefined, "p3"],
+    ["Phương án giao thông công trường giờ tan học", "u13", 0, null, 6, "todo", "Q", undefined, "p3"],
+    ["Hoàn công cọc khoan nhồi đợt 1", "u10", 1, null, 8, "todo", "", undefined, "p3"],
+    // Khối văn phòng
+    ["Hồ sơ dự thầu gói nhà xưởng KCN Quế Võ", "u3", 5, -6, 9, "in_progress", "Q", undefined, ""],
+    ["Gia hạn bảo lãnh thực hiện hợp đồng Sông Hồng", "u5", 5, null, 5, "todo", "QG", undefined, ""],
+    ["Kiểm định thiết bị nâng hạ toàn công ty quý IV", "u9", 5, null, 14, "todo", "Q", undefined, ""],
   ];
-  rows.forEach(([title, assigneeId, dept, start, due, status, flags, items], i) => {
+  rows.forEach(([title, assigneeId, dept, start, due, status, flags, items, project = "p1"], i) => {
     const multi = start !== null && due !== null;
     const doneAt = status === "done" && due !== null ? at(due + (i % 5 === 0 ? 1 : 0), 10) : null;
     tasks.push(
@@ -226,7 +287,9 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
         dueDate: due === null ? null : d(due),
         status,
         completedAt: doneAt,
-        createdBy: dept === 0 ? "u1" : "u2",
+        projectId: project || null,
+        directive: flags.includes("C"),
+        createdBy: flags.includes("C") || dept === 5 ? "u1" : dept === 0 ? "u1" : "u2",
         createdAt: at(Math.min(start ?? due ?? 0, due ?? 0) - 7, 2),
         checklist: items ? ck(items.map((t, k) => [t, status === "done" || k < 1] as [string, boolean])) : [],
       }),
@@ -241,5 +304,5 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
     { id: "n3", userId: "u4", title: "Bạn được nhắc tên", body: "Trần Thị Bình: nhớ chụp ảnh con kê trước khi mời TVGS", taskId: "t1", read: false, createdAt: at(0, 1) },
   ];
 
-  return { users: SEED_USERS, tasks, notifications };
+  return { users: SEED_USERS, projects, tasks, notifications };
 }

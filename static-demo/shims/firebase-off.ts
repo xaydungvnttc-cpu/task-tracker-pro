@@ -6,3 +6,6 @@ export const firebaseAuth = null as never;
 export function getFirebase(): never {
   throw new Error("Firebase tắt trong bản Demo tĩnh");
 }
+export const SAMPLE_PREFIX = "mau-";
+export const importSampleData = getFirebase as unknown as (ownerUid: string, today: string) => Promise<number>;
+export const clearSampleData = getFirebase as unknown as (...ids: string[][]) => Promise<void>;

@@ -1,8 +1,9 @@
 import "server-only";
 import { STATUS_LABEL } from "../constants";
 import { addDays, formatDate, startOfWeek } from "../dates";
+import { projectHealth } from "../projects";
 import { daysLeft, isOverdue, onTime } from "../tasks";
-import type { NotifyEvent, OutgoingMessage, Task, User } from "../types";
+import type { NotifyEvent, OutgoingMessage, Project, Task, User } from "../types";
 import { appUrl } from "./context";
 
 const who = (t: Task, users: User[]) => users.find((u) => u.id === t.assigneeId)?.name ?? "Chưa gán";
@@ -40,8 +41,20 @@ export function eventMessage(e: NotifyEvent): OutgoingMessage {
   }
 }
 
+const LIGHT = { red: "🔴", yellow: "🟡", green: "🟢" } as const;
+
+/** Một dòng mỗi dự án đang chạy, dự án đỏ lên trước. Ví dụ: "🔴 PN Nhà xưởng Phố Nối: Mốc "Lắp dựng thép" chậm 10 ngày; 5 việc quá hạn" */
+function projectLines(projects: Project[], tasks: Task[], today: string): string[] {
+  const order = ["red", "yellow", "green"];
+  return projects
+    .filter((p) => p.status === "active")
+    .map((p) => projectHealth(p, tasks, today))
+    .sort((a, b) => order.indexOf(a.health) - order.indexOf(b.health))
+    .map((h) => `${LIGHT[h.health]} ${h.project.code} ${h.project.name}: ${h.reasons.length ? h.reasons.slice(0, 2).join("; ") : "đúng tiến độ"}`);
+}
+
 /** Nhắc việc 8:00 sáng */
-export function dailyDigest(tasks: Task[], users: User[], today: string): OutgoingMessage {
+export function dailyDigest(tasks: Task[], users: User[], today: string, projects: Project[] = []): OutgoingMessage {
   const open = tasks.filter((t) => t.status !== "done");
   const overdue = open.filter((t) => isOverdue(t, today)).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
   const dueToday = open.filter((t) => t.dueDate === today);
@@ -52,6 +65,8 @@ export function dailyDigest(tasks: Task[], users: User[], today: string): Outgoi
   return {
     title: `☀️ Nhắc việc ngày ${formatDate(today, true)}`,
     sections: [
+      ...(projects.length ? [{ heading: "Tình hình dự án", lines: projectLines(projects, tasks, today) }] : []),
+      ...directiveSection(open, users, today),
       { heading: `Quá hạn (${overdue.length})`, tone: "red", lines: overdue.map((t) => line(t, users, ` · trễ ${-daysLeft(t, today)!} ngày`)) },
       { heading: `Đến hạn hôm nay (${dueToday.length})`, tone: "yellow", lines: dueToday.map((t) => line(t, users)) },
       { heading: `Sắp đến hạn 3 ngày tới (${soon.length})`, tone: "gray", lines: soon.map((t) => line(t, users)) },
@@ -61,7 +76,12 @@ export function dailyDigest(tasks: Task[], users: User[], today: string): Outgoi
 }
 
 /** Báo cáo tổng kết tuần, 20:00 Chủ nhật */
-export function weeklyReport(tasks: Task[], users: User[], today: string): OutgoingMessage {
+function directiveSection(open: Task[], users: User[], today: string): OutgoingMessage["sections"] {
+  const late = open.filter((t) => t.directive && isOverdue(t, today));
+  return late.length ? [{ heading: `Chỉ đạo quá hạn (${late.length})`, tone: "red", lines: late.map((t) => line(t, users, ` · trễ ${-daysLeft(t, today)!} ngày`)) }] : [];
+}
+
+export function weeklyReport(tasks: Task[], users: User[], today: string, projects: Project[] = []): OutgoingMessage {
   const ws = startOfWeek(today);
   const we = addDays(ws, 6);
   const doneWeek = tasks.filter((t) => t.status === "done" && t.completedAt && t.completedAt.slice(0, 10) >= ws && t.completedAt.slice(0, 10) <= we);
@@ -82,6 +102,7 @@ export function weeklyReport(tasks: Task[], users: User[], today: string): Outgo
   return {
     title: `📊 Tổng kết tuần ${formatDate(ws)} – ${formatDate(we, true)}`,
     sections: [
+      ...(projects.length ? [{ heading: "Tình hình dự án", lines: projectLines(projects, tasks, today) }] : []),
       { heading: "Kết quả", tone: "green", lines: [`Hoàn thành: ${doneWeek.length} việc`, `Tỷ lệ đúng hạn: ${rate === null ? "chưa có dữ liệu" : rate + "%"}`, ...byUser] },
       { heading: `Tồn đọng quá hạn (${backlog.length})`, tone: "red", lines: backlog.map((t) => line(t, users)) },
       { heading: `Kế hoạch tuần mới ${formatDate(nws)} – ${formatDate(nwe)} (${plan.length})`, tone: "gray", lines: plan.map((t) => line(t, users)) },

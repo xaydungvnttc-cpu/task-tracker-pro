@@ -13,7 +13,7 @@ export function pathToHash(path: string): string {
 }
 
 export function hashToPath(hash: string): string {
-  const h = hash.replace(/^#/, "");
+  const h = hash.replace(/^#\/?/, ""); // nhận cả #today và #/today (link trong tin Zalo)
   if (!h) return "/dashboard";
   const found = Object.entries(RESERVED).find(([, v]) => v === h);
   return found ? found[0] : "/" + h;

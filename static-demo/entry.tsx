@@ -12,6 +12,9 @@ import KanbanPage from "@/app/(app)/kanban/page";
 import CalendarPage from "@/app/(app)/calendar/page";
 import MembersPage from "@/app/(app)/members/page";
 import SettingsPage from "@/app/(app)/settings/page";
+import PortfolioPage from "@/app/(app)/portfolio/page";
+import DirectivesPage from "@/app/(app)/directives/page";
+import ProjectsPage from "@/app/(app)/projects/page";
 import { usePathname } from "next/navigation";
 
 const PAGES: Record<string, ComponentType> = {
@@ -23,6 +26,9 @@ const PAGES: Record<string, ComponentType> = {
   "/calendar": CalendarPage,
   "/members": MembersPage,
   "/settings": SettingsPage,
+  "/portfolio": PortfolioPage,
+  "/directives": DirectivesPage,
+  "/projects": ProjectsPage,
 };
 
 function Router() {

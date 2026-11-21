@@ -12,10 +12,10 @@ import { previewText, sendAll } from "./notification-service";
 export async function runJob(kind: "daily" | "weekly", clientConfig?: unknown) {
   const today = serverToday();
   const config = await resolveConfig(clientConfig);
-  const { tasks, users } = await loadData();
+  const { tasks, users, projects } = await loadData();
   const spawned = await spawnRecurring(tasks, today);
 
-  const message = kind === "daily" ? dailyDigest(tasks, users, today) : weeklyReport(tasks, users, today);
+  const message = kind === "daily" ? dailyDigest(tasks, users, today, projects) : weeklyReport(tasks, users, today, projects);
   const enabled = kind === "daily" ? config.events.dailyDigest : config.events.weeklyReport;
   const results = enabled ? await sendAll(config, message) : [];
 

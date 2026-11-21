@@ -14,7 +14,7 @@ import { collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, where, w
 import { getFirebase } from "../firebase";
 import { AVATAR_COLORS, DEPARTMENTS } from "../constants";
 import { buildSeed } from "../seed";
-import type { AppNotification, NotificationConfig, Task, User } from "../types";
+import type { AppNotification, NotificationConfig, Project, Task, User } from "../types";
 import type { AuthBackend, DataBackend } from "./types";
 
 /**
@@ -32,6 +32,7 @@ export const firestoreData: DataBackend = {
     const offs = [
       onSnapshot(collection(db, "users"), (s) => cb({ users: s.docs.map((d) => d.data() as User) })),
       onSnapshot(collection(db, "tasks"), (s) => cb({ tasks: s.docs.map((d) => d.data() as Task) })),
+      onSnapshot(collection(db, "projects"), (s) => cb({ projects: s.docs.map((d) => d.data() as Project) })),
       onSnapshot(query(collection(db, "notifications"), where("userId", "==", userId)), (s) =>
         cb({
           notifications: s.docs.map((d) => d.data() as AppNotification).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -45,6 +46,12 @@ export const firestoreData: DataBackend = {
   },
   async deleteTask(id) {
     await deleteDoc(doc(getFirebase().db, "tasks", id));
+  },
+  async saveProject(p) {
+    await setDoc(doc(getFirebase().db, "projects", p.id), clean(p));
+  },
+  async deleteProject(id) {
+    await deleteDoc(doc(getFirebase().db, "projects", id));
   },
   async saveUser(u) {
     await setDoc(doc(getFirebase().db, "users", u.id), clean(u));
@@ -95,16 +102,20 @@ export async function importSampleData(ownerUid: string, today: string): Promise
     assigneeId: t.assigneeId && id(t.assigneeId),
     watcherIds: t.watcherIds.map(id),
     createdBy: id(t.createdBy),
+    projectId: t.projectId ? SAMPLE_PREFIX + t.projectId : null,
     comments: t.comments.map((c) => ({ ...c, userId: id(c.userId) })),
   }));
+  const projects = seed.projects.map((p) => ({ ...p, id: SAMPLE_PREFIX + p.id, directorId: p.directorId && id(p.directorId), siteManagerId: p.siteManagerId && id(p.siteManagerId) }));
   await inChunks(users, (u) => setDoc(doc(db, "users", u.id), clean(u)));
+  await inChunks(projects, (p) => setDoc(doc(db, "projects", p.id), clean(p)));
   await inChunks(tasks, (t) => setDoc(doc(db, "tasks", t.id), clean(t)));
   return tasks.length;
 }
 
-export async function clearSampleData(taskIds: string[], userIds: string[]) {
+export async function clearSampleData(taskIds: string[], userIds: string[], projectIds: string[]) {
   const { db } = getFirebase();
   await inChunks(taskIds, (x) => deleteDoc(doc(db, "tasks", x)));
+  await inChunks(projectIds, (x) => deleteDoc(doc(db, "projects", x)));
   await inChunks(userIds, (x) => deleteDoc(doc(db, "users", x)));
 }
 

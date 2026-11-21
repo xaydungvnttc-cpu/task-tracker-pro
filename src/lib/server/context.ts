@@ -3,7 +3,7 @@ import { todayISO } from "../dates";
 import { withDefaults } from "../notification-config";
 import { buildSeed } from "../seed";
 import { buildNextInstance, shouldSpawn } from "../tasks";
-import type { AppNotification, NotificationConfig, Task, User } from "../types";
+import type { AppNotification, NotificationConfig, Project, Task, User } from "../types";
 import { getAdmin } from "./admin";
 
 export const appUrl = () => (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
@@ -75,14 +75,14 @@ export async function resolveConfig(clientConfig?: unknown): Promise<Notificatio
 }
 
 /** Dữ liệu cho cron và lịch: Firestore khi Production, dữ liệu mẫu khi Demo */
-export async function loadData(): Promise<{ tasks: Task[]; users: User[] }> {
+export async function loadData(): Promise<{ tasks: Task[]; users: User[]; projects: Project[] }> {
   const admin = getAdmin();
   if (!admin) {
     const seed = buildSeed(serverToday());
-    return { tasks: seed.tasks, users: seed.users };
+    return { tasks: seed.tasks, users: seed.users, projects: seed.projects };
   }
-  const [t, u] = await Promise.all([admin.db.collection("tasks").get(), admin.db.collection("users").get()]);
-  return { tasks: t.docs.map((d) => d.data() as Task), users: u.docs.map((d) => d.data() as User) };
+  const [t, u, p] = await Promise.all([admin.db.collection("tasks").get(), admin.db.collection("users").get(), admin.db.collection("projects").get()]);
+  return { tasks: t.docs.map((d) => d.data() as Task), users: u.docs.map((d) => d.data() as User), projects: p.docs.map((d) => d.data() as Project) };
 }
 
 /** Cron chạy lưới an toàn: sinh kỳ mới cho việc định kỳ dù không ai mở app */

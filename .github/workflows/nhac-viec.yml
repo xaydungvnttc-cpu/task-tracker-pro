@@ -41,5 +41,5 @@ jobs:
       - run: node --conditions=react-server .cron/cron-runner.mjs ${{ steps.pick.outputs.kind }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          NEXT_PUBLIC_APP_URL: https://xaydungvnttc-cpu.github.io/task-tracker-pro/
+          NEXT_PUBLIC_APP_URL: "https://xaydungvnttc-cpu.github.io/task-tracker-pro/#"
           APP_TIMEZONE: Asia/Ho_Chi_Minh

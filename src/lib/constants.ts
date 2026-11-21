@@ -6,6 +6,7 @@ export const APP_NAME = "Task Tracker Pro";
 export const IS_STATIC_DEMO = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
 
 export const DEPARTMENTS = [
+  "Ban Tổng Giám đốc",
   "Ban Chỉ huy công trường",
   "Kỹ thuật thi công",
   "Kế hoạch - Vật tư",
@@ -81,3 +82,13 @@ export const QUADRANTS = [
 ] as const;
 
 export const AVATAR_COLORS = ["#2563eb", "#db2777", "#059669", "#d97706", "#7c3aed", "#0891b2", "#dc2626", "#4f46e5"];
+
+export const PROJECT_STATUS_LABEL: Record<import("./types").ProjectStatus, string> = {
+  active: "Đang thi công",
+  paused: "Tạm dừng",
+  done: "Đã bàn giao",
+};
+
+/** Bộ lọc dự án dùng chung mọi màn hình: "all" = cả công ty, "office" = khối văn phòng */
+export const OFFICE = "office";
+export const OFFICE_LABEL = "Khối văn phòng";
