@@ -7,14 +7,14 @@ on:
   schedule:
     - cron: "0 1 * * *" # 8:00 sáng hằng ngày
     - cron: "0 13 * * 0" # 20:00 Chủ nhật
-    - cron: "0 */3 * * *" # 3 giờ một lần: ghi nhận người mới nhắn cho bot
+    - cron: "*/15 * * * *" # 15 phút một lần: đọc tin nhắn gửi bot, tin quan trọng thành việc
   workflow_dispatch:
     inputs:
       kind:
-        description: "daily = nhắc việc sáng, weekly = báo cáo tuần, register = chỉ ghi nhận người nhắn bot"
+        description: "daily = nhắc việc sáng, weekly = báo cáo tuần, inbox = chỉ đọc tin nhắn gửi bot"
         default: daily
         type: choice
-        options: [daily, weekly, register]
+        options: [daily, weekly, inbox]
 
 concurrency: nhac-viec
 
@@ -35,7 +35,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then k="${{ inputs.kind }}";
           elif [ "${{ github.event.schedule }}" = "0 1 * * *" ]; then k=daily;
           elif [ "${{ github.event.schedule }}" = "0 13 * * 0" ]; then k=weekly;
-          else k=register; fi
+          else k=inbox; fi
           echo "kind=$k" >> "$GITHUB_OUTPUT"
       - run: npx esbuild scripts/cron-runner.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=.cron/cron-runner.mjs --log-level=warning
       - run: node --conditions=react-server .cron/cron-runner.mjs ${{ steps.pick.outputs.kind }}

@@ -7,8 +7,11 @@
 import { withDefaults } from "../src/lib/notification-config";
 import { getAdmin } from "../src/lib/server/admin";
 import { runJob } from "../src/lib/server/jobs";
+import { serverToday } from "../src/lib/server/context";
 import { ZALO_BOT_API, splitIds } from "../src/lib/server/notification-service";
-import type { NotificationConfig } from "../src/lib/types";
+import { classify, taskFromZalo } from "../src/lib/server/zalo-inbox";
+import { formatDate } from "../src/lib/dates";
+import type { NotificationConfig, Project } from "../src/lib/types";
 
 const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
 if (!sa) throw new Error("Thiếu secret FIREBASE_SERVICE_ACCOUNT");
@@ -27,11 +30,15 @@ async function zaloBot(token: string, method: string, body: unknown) {
   return (await res.json().catch(() => ({}))) as { ok?: boolean; result?: unknown };
 }
 
+type ZaloUpdate = { message?: { message_id?: string; text?: string; chat?: { id?: string }; from?: { display_name?: string } } };
+
 /**
- * Ai nhắn cho bot thì tự thêm chat_id vào danh sách người nhận và được bot trả lời xác nhận.
- * Ví dụ: chỉ huy trưởng nhắn "chào" cho bot tối nay → sáng mai 8:00 nhận bản nhắc việc.
+ * Đọc tin nhắn người dùng gửi cho bot (15 phút một lần):
+ * - Người mới nhắn → thêm vào danh sách nhận nhắc việc.
+ * - Tin quan trọng → tự tạo việc trong app, bot trả lời "Đã tạo việc".
+ * Ví dụ: chỉ huy trưởng nhắn "Gấp: SH thiếu thép D16 sàn tầng 6" → việc Khẩn cấp ở dự án Sông Hồng, hạn ngày mai.
  */
-async function registerNewChats() {
+async function processInbox() {
   const { db } = getAdmin()!;
   const ref = db.doc("settings/integrations");
   const snap = await ref.get();
@@ -40,16 +47,48 @@ async function registerNewChats() {
   if (cfg.zalo.mode !== "bot" || !token) return;
   const ids = splitIds(cfg.zalo.botChatIds);
   const added: string[] = [];
-  for (let i = 0; i < 30; i++) {
+  let projects: Project[] | null = null;
+  const ownerId = ((await db.doc("meta/owner").get()).data()?.uid as string | undefined) ?? "";
+  const today = serverToday();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+
+  for (let i = 0; i < 50; i++) {
     const r = await zaloBot(token, "getUpdates", { timeout: 1 }).catch(() => ({ ok: false }) as { ok?: boolean; result?: unknown });
-    const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as { message?: { chat?: { id?: string }; from?: { display_name?: string } } }[];
+    const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
     if (!r.ok || !list.length) break;
     for (const u of list) {
-      const id = u.message?.chat?.id;
-      if (!id || ids.includes(id)) continue;
-      ids.push(id);
-      added.push(id);
-      await zaloBot(token, "sendMessage", { chat_id: id, text: `Đã đăng ký nhận nhắc việc Task Tracker Pro cho ${u.message?.from?.display_name ?? "anh/chị"}. Bot gửi nhắc 8:00 sáng mỗi ngày và báo cáo 20:00 Chủ nhật.` });
+      const m = u.message;
+      const chatId = m?.chat?.id;
+      if (!chatId) continue;
+      const sender = m?.from?.display_name ?? "anh/chị";
+      const isNew = !ids.includes(chatId);
+      if (isNew) {
+        ids.push(chatId);
+        added.push(chatId);
+      }
+      const text = (m?.text ?? "").trim();
+      const c = text ? classify(text) : { create: false, urgent: false };
+      if (c.create && m?.message_id) {
+        projects ??= (await db.collection("projects").get()).docs.map((d) => ({ ...(d.data() as Project), id: d.id }));
+        const nowIso = new Date().toISOString();
+        const task = taskFromZalo({ messageId: m.message_id, text, sender, urgent: c.urgent, projects, ownerId, today, nowIso });
+        await db.doc(`tasks/${task.id}`).set(task);
+        if (ownerId)
+          await db.collection("notifications").add({ userId: ownerId, title: c.urgent ? "Việc khẩn từ Zalo" : "Việc mới từ Zalo", body: `${sender}: ${task.title}`, taskId: task.id, read: false, createdAt: nowIso });
+        const p = projects.find((x) => x.id === task.projectId);
+        await zaloBot(token, "sendMessage", {
+          chat_id: chatId,
+          text: `Đã tạo việc: ${task.title}${p ? ` (dự án ${p.name})` : ""}, hạn ${formatDate(task.dueDate)}${c.urgent ? ", mức Khẩn cấp" : ""}. Xem tại ${appUrl}/tasks`,
+        });
+        console.log(`Tạo việc từ Zalo: ${task.id}`);
+      } else if (isNew) {
+        await zaloBot(token, "sendMessage", {
+          chat_id: chatId,
+          text: `Đã đăng ký nhận nhắc việc Task Tracker Pro cho ${sender}. Bot gửi nhắc 8:00 sáng mỗi ngày và báo cáo 20:00 Chủ nhật. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:", ví dụ "Gấp: SH thiếu thép D16 sàn tầng 6".`,
+        });
+      } else if (text) {
+        await zaloBot(token, "sendMessage", { chat_id: chatId, text: `Tin này chưa thành việc. Muốn tạo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".` });
+      }
     }
   }
   if (added.length) {
@@ -59,10 +98,10 @@ async function registerNewChats() {
 }
 
 const kind = process.argv[2];
-if (kind !== "daily" && kind !== "weekly" && kind !== "register") throw new Error("Dùng: daily | weekly | register");
+if (kind !== "daily" && kind !== "weekly" && kind !== "inbox") throw new Error("Dùng: daily | weekly | inbox");
 
-await registerNewChats();
-if (kind !== "register") {
+await processInbox();
+if (kind !== "inbox") {
   const r = await runJob(kind);
   console.log(JSON.stringify({ ...r, preview: undefined }, null, 2));
   console.log(r.preview);
