@@ -28,7 +28,7 @@ function blankTask(createdBy: string, department: string, today: string, preset?
     checklist: [],
     inputLinks: [],
     outputLinks: [],
-    requireOutput: false,
+    requireOutput: true,
     recurrence: null,
     recurrenceSpawned: false,
     comments: [],
@@ -98,7 +98,7 @@ export function TaskDrawer() {
   const assignable = can.assignOthers(me) ? users : users.filter((u) => u.id === me.id);
   const pct = progressOf(draft);
   const next = draft.recurrence ? nextOccurrence(draft, today) : null;
-  const outputMissing = draft.requireOutput && draft.outputLinks.length === 0;
+  const outputMissing = draft.outputLinks.length === 0;
 
   return (
     <Drawer
@@ -302,10 +302,10 @@ export function TaskDrawer() {
         </div>
 
         <LinkEditor label="Tài liệu đầu vào" links={draft.inputLinks} editable={fullEdit} onChange={(l) => set({ inputLinks: l })} />
-        <div className={clsx("rounded-xl", outputMissing && "ring-2 ring-amber-400 ring-offset-2 ring-offset-surface")}>
+        <div className={clsx("rounded-xl", outputMissing && draft.status === "done" && "ring-2 ring-amber-400 ring-offset-2 ring-offset-surface")}>
           <LinkEditor label="Kết quả bàn giao" links={draft.outputLinks} editable={progressEdit} onChange={(l) => set({ outputLinks: l })} />
         </div>
-        <Toggle checked={draft.requireOutput} disabled={!fullEdit} onChange={(v) => set({ requireOutput: v })} label="Bắt buộc có link kết quả khi Hoàn thành" />
+        {outputMissing && draft.status !== "done" && <p className="-mt-2 text-xs text-amber-700 dark:text-amber-400">Muốn bấm Hoàn thành phải có ít nhất 1 link kết quả: biên bản, ảnh hiện trường, file hồ sơ…</p>}
 
         {/* Bình luận và @nhắc tên */}
         {!isNew && (

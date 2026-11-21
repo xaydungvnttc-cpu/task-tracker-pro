@@ -12,6 +12,7 @@ export interface User {
   department: string;
   title?: string;
   color: string; // màu avatar
+  zaloChatId?: string; // liên kết Zalo Bot để nhận nhắc việc riêng
 }
 
 export interface ChecklistItem {
@@ -54,6 +55,7 @@ export interface Project {
   client: string; // Chủ đầu tư
   directorId: string | null; // Giám đốc dự án
   siteManagerId: string | null; // Chỉ huy trưởng
+  memberIds?: string[]; // thành viên được xem việc của dự án (ngoài GĐDA, CHT)
   startDate: string | null;
   endDate: string | null; // ngày bàn giao theo hợp đồng
   status: ProjectStatus;
@@ -119,7 +121,7 @@ export interface NotificationConfig {
     smtpPass: string;
   };
   webhooks: { id: string; type: WebhookType; url: string; enabled: boolean }[];
-  events: { taskAssigned: boolean; mention: boolean; statusChange: boolean; dailyDigest: boolean; weeklyReport: boolean };
+  events: { taskAssigned: boolean; mention: boolean; statusChange: boolean; dailyDigest: boolean; weeklyReport: boolean; afternoonCheck: boolean };
 }
 
 export type ChannelKey = "zalo" | "telegram" | "email" | "webhooks";

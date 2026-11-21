@@ -54,7 +54,7 @@ export const firestoreData: DataBackend = {
     await deleteDoc(doc(getFirebase().db, "projects", id));
   },
   async saveUser(u) {
-    await setDoc(doc(getFirebase().db, "users", u.id), clean(u));
+    await setDoc(doc(getFirebase().db, "users", u.id), clean(u), { merge: true });
   },
   async addNotifications(list) {
     const { db } = getFirebase();
@@ -105,11 +105,18 @@ export async function importSampleData(ownerUid: string, today: string): Promise
     projectId: t.projectId ? SAMPLE_PREFIX + t.projectId : null,
     comments: t.comments.map((c) => ({ ...c, userId: id(c.userId) })),
   }));
-  const projects = seed.projects.map((p) => ({ ...p, id: SAMPLE_PREFIX + p.id, directorId: p.directorId && id(p.directorId), siteManagerId: p.siteManagerId && id(p.siteManagerId) }));
+  const projects = seed.projects.map((p) => ({ ...p, id: SAMPLE_PREFIX + p.id, directorId: p.directorId && id(p.directorId), siteManagerId: p.siteManagerId && id(p.siteManagerId), memberIds: (p.memberIds ?? []).map(id) }));
   await inChunks(users, (u) => setDoc(doc(db, "users", u.id), clean(u)));
   await inChunks(projects, (p) => setDoc(doc(db, "projects", p.id), clean(p)));
   await inChunks(tasks, (t) => setDoc(doc(db, "tasks", t.id), clean(t)));
   return tasks.length;
+}
+
+/** Báo cáo của trợ lý AI do lịch chạy GitHub ghi vào settings/aiReport (chỉ Owner đọc được) */
+export async function loadAiReport(): Promise<{ text: string; createdAt: string } | null> {
+  const { db } = getFirebase();
+  const snap = await getDoc(doc(db, "settings", "aiReport")).catch(() => null);
+  return snap?.exists() ? (snap.data() as { text: string; createdAt: string }) : null;
 }
 
 export async function clearSampleData(taskIds: string[], userIds: string[], projectIds: string[]) {

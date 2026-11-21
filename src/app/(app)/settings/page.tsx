@@ -1,5 +1,6 @@
 "use client";
 
+import { RULES } from "@/lib/reminders";
 import { Bell, CalendarDays, Copy, Database, Loader2, Mail, MessageCircle, Plus, RotateCcw, Send, Trash2, Webhook, Zap } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useApp } from "@/components/app-provider";
@@ -199,11 +200,18 @@ export default function SettingsPage() {
                 <Toggle checked={cfg.events.mention} onChange={(v) => set("events", { mention: v })} label="Báo ngay khi được @nhắc tên" />
                 <Toggle checked={cfg.events.statusChange} onChange={(v) => set("events", { statusChange: v })} label="Báo khi việc Hoàn thành hoặc Tạm dừng" />
                 <Toggle checked={cfg.events.dailyDigest} onChange={(v) => set("events", { dailyDigest: v })} label="Nhắc việc 8:00 sáng hằng ngày" />
+                <Toggle checked={cfg.events.afternoonCheck} onChange={(v) => set("events", { afternoonCheck: v })} label="Nhắc 16:00 việc hạn hôm nay chưa xong (thứ 2 - thứ 7)" />
                 <Toggle checked={cfg.events.weeklyReport} onChange={(v) => set("events", { weeklyReport: v })} label="Báo cáo tổng kết 20:00 Chủ nhật" />
+                <div className="rounded-lg bg-muted px-3 py-2 text-xs leading-relaxed text-ink-soft">
+                  <div className="mb-1 font-semibold text-ink">Quy tắc nhắc tự động mỗi sáng</div>
+                  <div>• Người làm: nhắc khi còn {RULES.remindBefore.filter((d) => d > 0).join(" ngày, ")} ngày, đúng ngày hạn, và nhắc lại mỗi ngày khi đã quá hạn.</div>
+                  <div>• Trễ từ {RULES.escalateManager} ngày: báo quản lý phòng ban. Trễ từ {RULES.escalateOwner} ngày: báo Ban Tổng Giám đốc.</div>
+                  <div>• Việc quá {RULES.unassignedDays} ngày chưa có người nhận, hoặc đang làm mà {RULES.staleDays} ngày không cập nhật: đưa vào mục &quot;Cần chú ý&quot; ở trang Hôm nay và bản nhắc Zalo.</div>
+                </div>
                 <p className="flex items-start gap-1.5 text-xs text-ink-soft">
                   <Bell size={13} className="mt-0.5 shrink-0" /> Chuông thông báo trong app luôn bật cho mọi người.
                 </p>
-                {IS_STATIC_DEMO && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Nhắc việc 8:00 sáng và báo cáo 20:00 Chủ nhật được gửi tự động qua lịch chạy GitHub (bật Zalo Bot ở trên rồi bấm Lưu). Báo tức thì khi giao việc, nhắc tên hiện ở chuông trong app.</p>}
+                {IS_STATIC_DEMO && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Nhắc việc 8:00 sáng, nhắc 16:00 và báo cáo 20:00 Chủ nhật được gửi tự động qua lịch chạy GitHub (bật Zalo Bot ở trên rồi bấm Lưu). Báo tức thì khi giao việc, nhắc tên hiện ở chuông trong app.</p>}
                 <div className="flex flex-wrap gap-2 border-t border-line pt-3">
                   <Button size="sm" disabled={!!busy || IS_STATIC_DEMO} onClick={() => runCron("daily-digest")}>
                     {busy === "daily-digest" && <Loader2 size={14} className="animate-spin" />} Chạy thử nhắc việc sáng
@@ -329,6 +337,16 @@ function Profile() {
         >
           Lưu hồ sơ
         </Button>
+        <div className="rounded-lg bg-muted px-3 py-2 text-xs leading-relaxed">
+          <div className="font-semibold">Nhận nhắc việc riêng qua Zalo</div>
+          {me!.zaloChatId ? (
+            <div className="text-emerald-700 dark:text-emerald-400">Đã liên kết. Bot Zalo nhắc việc của bạn lúc 8:00 sáng.</div>
+          ) : (
+            <div className="text-ink-soft">
+              Mở bot Zalo của công ty, nhắn đúng tin: <b className="select-all font-mono text-ink">LK {me!.id.slice(0, 6).toUpperCase()}</b>. Khoảng 15 phút sau bot xác nhận.
+            </div>
+          )}
+        </div>
       </div>
     </Card>
   );

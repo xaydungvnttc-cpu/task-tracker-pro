@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { CheckCircle2, Circle, ListChecks, PlayCircle, Repeat } from "lucide-react";
+import { CheckCircle2, Circle, ListChecks, Paperclip, PlayCircle, Repeat } from "lucide-react";
 import { useApp } from "./app-provider";
 import { Avatar, DueBadge, PriorityBadges, ProgressBar, StatusBadge } from "./ui";
 import { STATUS_LABEL } from "@/lib/constants";
@@ -37,6 +37,26 @@ export function QuickStatusButton({ task }: { task: Task }) {
   );
 }
 
+/**
+ * Việc đã xong: hiện link kết quả để nhìn là biết hoàn thành thế nào.
+ * Ví dụ: "📎 Biên bản nghiệm thu có chữ ký TVGS · Ảnh hiện trường". Xong mà không có link thì báo đỏ.
+ */
+export function ResultLinks({ task }: { task: Task }) {
+  if (task.status !== "done") return null;
+  if (!task.outputLinks.length) return <div className="mt-1.5 text-[11px] font-medium text-red-600">Thiếu link kết quả</div>;
+  return (
+    <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+      <Paperclip size={12} className="shrink-0 text-emerald-600" />
+      {task.outputLinks.slice(0, 2).map((l, i) => (
+        <a key={i} href={l.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="max-w-[16rem] truncate text-emerald-700 hover:underline dark:text-emerald-400">
+          {l.label || l.url}
+        </a>
+      ))}
+      {task.outputLinks.length > 2 && <span className="text-ink-soft">+{task.outputLinks.length - 2}</span>}
+    </div>
+  );
+}
+
 /** Thẻ task dùng chung cho Hôm nay, Kanban, Eisenhower, Danh sách */
 export function TaskCard({ task, compact, showStatus = true }: { task: Task; compact?: boolean; showStatus?: boolean }) {
   const { openTask, userById, projectById, projectFilter, today } = useApp();
@@ -67,6 +87,7 @@ export function TaskCard({ task, compact, showStatus = true }: { task: Task; com
             {showStatus && <StatusBadge status={task.status} />}
             {task.recurrence && <Repeat size={12} className="text-ink-soft" aria-label="Việc định kỳ" />}
           </div>
+          <ResultLinks task={task} />
         </div>
         <Avatar user={userById(task.assigneeId)} size={26} />
       </div>

@@ -1,6 +1,6 @@
 import { diffDays } from "./dates";
 import { isOverdue } from "./tasks";
-import type { Milestone, Project, Task } from "./types";
+import type { Milestone, Project, Task, User } from "./types";
 
 export type Health = "green" | "yellow" | "red";
 
@@ -75,4 +75,22 @@ export function applyProject(tasks: Task[], filter: string): Task[] {
   if (filter === "all") return tasks;
   if (filter === "office") return tasks.filter((t) => !t.projectId);
   return tasks.filter((t) => t.projectId === filter);
+}
+
+/**
+ * Ai xem được dự án nào. Ví dụ: Chỉ huy trưởng Phố Nối chỉ thấy việc Phố Nối;
+ * Tổng Giám đốc (Owner, Ban Tổng Giám đốc) thấy tất cả dự án.
+ */
+export const seesAllProjects = (u: User | null) => !!u && (u.role === "owner" || u.department === "Ban Tổng Giám đốc");
+export const isProjectMember = (p: Project, u: User) => p.directorId === u.id || p.siteManagerId === u.id || !!p.memberIds?.includes(u.id);
+export const visibleProjects = (projects: Project[], u: User | null) => (seesAllProjects(u) ? projects : u ? projects.filter((p) => isProjectMember(p, u)) : []);
+
+/** Việc mình làm, theo dõi hoặc tạo thì luôn thấy; còn lại: việc dự án mình tham gia, việc văn phòng của phòng mình */
+export function visibleTasks(tasks: Task[], projects: Project[], u: User | null): Task[] {
+  if (!u) return [];
+  if (seesAllProjects(u)) return tasks;
+  const mine = new Set(visibleProjects(projects, u).map((p) => p.id));
+  return tasks.filter(
+    (t) => t.assigneeId === u.id || t.createdBy === u.id || t.watcherIds.includes(u.id) || (t.projectId ? mine.has(t.projectId) : t.department === u.department),
+  );
 }

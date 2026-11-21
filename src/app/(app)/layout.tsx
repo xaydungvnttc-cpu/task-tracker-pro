@@ -29,6 +29,7 @@ import { Avatar, Button, Select } from "@/components/ui";
 import { auth } from "@/lib/backend";
 import { OFFICE, OFFICE_LABEL, ROLE_LABEL, SCOPE_LABEL } from "@/lib/constants";
 import { formatDateTime } from "@/lib/dates";
+import { seesAllProjects } from "@/lib/projects";
 import { can } from "@/lib/rbac";
 import type { Scope, User } from "@/lib/types";
 
@@ -136,13 +137,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
 /** Chọn dự án: mọi màn hình (tổng quan, danh sách, bảng tiến độ, lịch…) chỉ hiện việc của dự án đang chọn */
 function ProjectPicker() {
-  const { projects, projectFilter, setProjectFilter } = useApp();
+  const { projects, projectFilter, setProjectFilter, me } = useApp();
   const active = projects.filter((p) => p.status !== "done" || p.id === projectFilter).sort((a, b) => a.name.localeCompare(b.name, "vi"));
   return (
     <label className="block rounded-lg bg-muted px-3 py-2">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Đang xem</span>
       <Select className="mt-1 h-8 border-0 bg-surface py-0 text-xs font-semibold" value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} aria-label="Chọn dự án">
-        <option value="all">Cả công ty</option>
+        <option value="all">{seesAllProjects(me) ? "Cả công ty" : "Tất cả dự án của tôi"}</option>
         {active.map((p) => (
           <option key={p.id} value={p.id}>
             {p.code} · {p.name}

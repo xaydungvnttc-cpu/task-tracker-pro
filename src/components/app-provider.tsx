@@ -5,7 +5,7 @@ import { auth, data } from "@/lib/backend";
 import { todayISO, nowISO } from "@/lib/dates";
 import { can } from "@/lib/rbac";
 import { STATUS_LABEL } from "@/lib/constants";
-import { applyProject } from "@/lib/projects";
+import { applyProject, visibleProjects, visibleTasks } from "@/lib/projects";
 import { applyScope, buildNextInstance, findMentions, newId, shouldSpawn } from "@/lib/tasks";
 import type { AppNotification, NotifyEvent, Project, Scope, Task, TaskStatus, User } from "@/lib/types";
 
@@ -66,10 +66,12 @@ const PROJECT_KEY = "ttp:project";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [me, setMe] = useState<User | null>(null);
+  const [authMe, setMe] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  // Hồ sơ mới nhất từ danh sách người dùng (ví dụ vừa liên kết Zalo), không dùng bản cũ lúc đăng nhập
+  const me = useMemo(() => (authMe ? (users.find((u) => u.id === authMe.id) ?? authMe) : null), [authMe, users]);
+  const [allTasks, setTasks] = useState<Task[]>([]);
+  const [allProjects, setProjects] = useState<Project[]>([]);
   const [projectFilter, setProjectFilterState] = useState("all");
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [scope, setScopeState] = useState<Scope>("all");
@@ -138,7 +140,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const userById = useCallback((id: string | null | undefined) => users.find((u) => u.id === id), [users]);
-  const projectById = useCallback((id: string | null | undefined) => (id ? projects.find((p) => p.id === id) : undefined), [projects]);
+  // Mỗi người chỉ thấy dự án mình tham gia (Ban TGĐ thấy tất cả), xem src/lib/projects.ts
+  const projects = useMemo(() => visibleProjects(allProjects, me), [allProjects, me]);
+  const tasks = useMemo(() => visibleTasks(allTasks, allProjects, me), [allTasks, allProjects, me]);
+  const projectById = useCallback((id: string | null | undefined) => (id ? allProjects.find((p) => p.id === id) : undefined), [allProjects]);
 
   const saveProject = useCallback(
     async (p: Project) => {
@@ -160,7 +165,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteProject = useCallback(
     async (p: Project) => {
       if (!me || !can.manageProjects(me)) return;
-      const n = tasks.filter((t) => t.projectId === p.id).length;
+      const n = allTasks.filter((t) => t.projectId === p.id).length;
       if (n) return toast(`Dự án còn ${n} việc. Muốn ẩn dự án thì đổi trạng thái sang Đã bàn giao`, "error");
       await data.deleteProject(p.id);
       toast("Đã xóa dự án", "success");
@@ -206,8 +211,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast("Bạn không có quyền thực hiện thao tác này", "error");
         return false;
       }
-      if (next.status === "done" && next.requireOutput && next.outputLinks.length === 0) {
-        toast("Việc này bắt buộc có link kết quả bàn giao trước khi Hoàn thành", "error");
+      // Mọi việc phải có bằng chứng hoàn thành. Ví dụ: "Nghiệm thu cốt thép sàn 6" cần link biên bản nghiệm thu, ảnh hiện trường
+      if (next.status === "done" && prev?.status !== "done" && next.outputLinks.length === 0) {
+        toast("Cần thêm ít nhất 1 link kết quả (biên bản, ảnh, file) trước khi Hoàn thành", "error");
         if (prev) setDrawer({ taskId: prev.id, isNew: false });
         return false;
       }

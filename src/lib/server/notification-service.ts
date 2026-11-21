@@ -70,16 +70,43 @@ async function post(url: string, body: unknown, headers: Record<string, string> 
 export const ZALO_BOT_API = "https://bot-api.zaloplatforms.com/bot";
 export const splitIds = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
+/**
+ * Zalo giới hạn 2000 ký tự một tin: cắt theo đoạn (dòng trống) thành nhiều tin liên tiếp, không cắt giữa dòng.
+ * Ví dụ bản nhắc 4.000 ký tự → 3 tin: tình hình dự án + cảnh báo, việc quá hạn, việc sắp đến hạn.
+ */
+export function splitForZalo(text: string, max = 1900): string[] {
+  const out: string[] = [];
+  let cur = "";
+  for (const para of text.split("\n\n")) {
+    const chunk = para.length > max ? para.slice(0, max - 1) + "…" : para;
+    if (cur && cur.length + 2 + chunk.length > max) {
+      out.push(cur);
+      cur = chunk;
+    } else cur = cur ? `${cur}\n\n${chunk}` : chunk;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+/** Gửi riêng một người qua Zalo Bot, ví dụ bản nhắc việc của riêng kỹ sư QS mỗi sáng */
+export async function sendZaloBotTo(token: string, chatId: string, m: OutgoingMessage) {
+  for (const part of splitForZalo(toText(m))) {
+    const res = JSON.parse(await post(`${ZALO_BOT_API}${token}/sendMessage`, { chat_id: chatId, text: part }));
+    if (!res.ok) throw new Error(`Zalo Bot: ${res.description ?? res.message ?? JSON.stringify(res).slice(0, 150)}`);
+  }
+}
+
 async function sendZalo(c: NotificationConfig["zalo"], m: OutgoingMessage) {
   const text = toText(m).slice(0, 1900); // Zalo giới hạn 2000 ký tự
   if (c.mode === "bot") {
     const ids = splitIds(c.botChatIds);
     if (!c.botToken) throw new Error("Thiếu Bot Token");
     if (!ids.length) throw new Error("Chưa có ai nhắn cho bot. Mở Zalo, nhắn một tin cho bot rồi chạy lại");
-    for (const chatId of ids) {
-      const res = JSON.parse(await post(`${ZALO_BOT_API}${c.botToken}/sendMessage`, { chat_id: chatId, text }));
-      if (!res.ok) throw new Error(`Zalo Bot: ${res.description ?? res.message ?? JSON.stringify(res).slice(0, 150)}`);
-    }
+    for (const chatId of ids)
+      for (const part of splitForZalo(toText(m))) {
+        const res = JSON.parse(await post(`${ZALO_BOT_API}${c.botToken}/sendMessage`, { chat_id: chatId, text: part }));
+        if (!res.ok) throw new Error(`Zalo Bot: ${res.description ?? res.message ?? JSON.stringify(res).slice(0, 150)}`);
+      }
     return;
   }
   if (c.mode === "webhook") {

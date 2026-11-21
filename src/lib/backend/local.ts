@@ -11,7 +11,7 @@ import type { AuthBackend, DataBackend, Snapshot } from "./types";
  * Chế độ Demo: toàn bộ dữ liệu nằm trong localStorage của trình duyệt.
  * Mở 2 tab cùng lúc vẫn đồng bộ nhờ sự kiện "storage".
  */
-const DATA_KEY = "ttp:data:v4";
+const DATA_KEY = "ttp:data:v5";
 const SESSION_KEY = "ttp:session";
 const CRED_KEY = "ttp:credentials";
 const INTEGRATION_KEY = "ttp:integrations";

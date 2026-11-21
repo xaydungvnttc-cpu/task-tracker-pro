@@ -8,9 +8,11 @@ import { useMemo, useState } from "react";
 import { useApp } from "@/components/app-provider";
 import { Avatar, Button, Card, CardTitle, EmptyState, PageHeader, ProgressBar, Segmented } from "@/components/ui";
 import { DEPARTMENTS, OFFICE, OFFICE_LABEL, PROJECT_STATUS_LABEL } from "@/lib/constants";
-import { addMonths, diffDays, endOfMonth, endOfQuarter, formatDate, startOfMonth, startOfQuarter } from "@/lib/dates";
+import { addDays, addMonths, diffDays, endOfMonth, endOfQuarter, formatDate, startOfMonth, startOfQuarter } from "@/lib/dates";
 import { downloadCsv, groupKpi, type KpiRow } from "@/lib/kpi";
 import { HEALTH_LABEL, projectHealth, type Health } from "@/lib/projects";
+import { RISK_LABEL, companyRisks } from "@/lib/early-warning";
+import { AiReport } from "@/components/ai-report";
 import { can } from "@/lib/rbac";
 import { isOverdue } from "@/lib/tasks";
 
@@ -90,6 +92,9 @@ export default function PortfolioPage() {
         <Tile icon={Flag} label="Việc quá hạn toàn công ty" value={overdueAll.length} tone="red" />
         <Tile icon={ScrollText} label="Chỉ đạo chưa xong" value={directives.length} tone={directivesLate.length ? "red" : undefined} note={directivesLate.length ? `${directivesLate.length} chỉ đạo đã quá hạn` : undefined} />
       </div>
+
+      <EarlyWarning />
+      <AiReport />
 
       <Card className="mt-5">
         <CardTitle action={<Link href="/projects" className="text-xs font-medium text-brand-600">Quản lý dự án</Link>}>Các dự án</CardTitle>
@@ -281,5 +286,74 @@ function Tile({ icon: Icon, label, value, tone, note }: { icon: typeof Flag; lab
       <div className="mt-2 text-3xl font-bold">{value}</div>
       {note && <div className="text-[11px] opacity-80">{note}</div>}
     </div>
+  );
+}
+
+/**
+ * Cảnh báo sớm: dự án có nguy cơ chậm và phương án xử lý đề xuất.
+ * Bấm "Giao việc" là tạo ngay một chỉ đạo cho Giám đốc dự án, có sẵn hạn, để không bị động.
+ */
+function EarlyWarning() {
+  const { tasks, projects, today, newTask, me } = useApp();
+  const risks = useMemo(() => companyRisks(projects, tasks, today), [projects, tasks, today]);
+  return (
+    <Card className="mt-5">
+      <CardTitle>Cảnh báo sớm và phương án xử lý</CardTitle>
+      {risks.length === 0 ? (
+        <div className="p-4">
+          <EmptyState text="Chưa thấy dự án nào có nguy cơ chậm." />
+        </div>
+      ) : (
+        <div className="divide-y divide-line">
+          {risks.map((r) => (
+            <div key={r.project.id} className="px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: r.project.color }}>
+                  {r.project.code}
+                </span>
+                <span className="text-sm font-semibold">{r.project.name}</span>
+                <span className={clsx("rounded-full px-2 py-0.5 text-[11px] font-semibold", r.level === "high" ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300")}>
+                  {RISK_LABEL[r.level]}
+                </span>
+              </div>
+              <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-ink-soft">
+                {r.signals.map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+              <div className="mt-2 space-y-1.5">
+                {r.actions.map((a) => (
+                  <div key={a.text} className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm">
+                    <span className="flex-1">{a.text}</span>
+                    <span className="shrink-0 text-xs text-ink-soft">hạn {formatDate(addDays(today, a.inDays))}</span>
+                    {can.createTask(me!) && (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          newTask({
+                            title: a.text,
+                            projectId: r.project.id,
+                            directive: true,
+                            important: true,
+                            urgent: a.inDays <= 2,
+                            assigneeId: r.project.directorId,
+                            department: "Ban Chỉ huy công trường",
+                            timeType: "single",
+                            dueDate: addDays(today, a.inDays),
+                            description: `Phương án xử lý từ cảnh báo sớm ngày ${formatDate(today, true)}:\n- ${r.signals.join("\n- ")}`,
+                          })
+                        }
+                      >
+                        Giao việc
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }

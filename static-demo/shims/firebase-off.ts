@@ -9,3 +9,4 @@ export function getFirebase(): never {
 export const SAMPLE_PREFIX = "mau-";
 export const importSampleData = getFirebase as unknown as (ownerUid: string, today: string) => Promise<number>;
 export const clearSampleData = getFirebase as unknown as (...ids: string[][]) => Promise<void>;
+export const loadAiReport = async () => null;

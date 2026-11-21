@@ -57,7 +57,7 @@ writeFileSync(
 // Mạng trước, mất mạng thì dùng bản đã lưu
 writeFileSync(
   resolve(out, "sw.js"),
-  `const C = "ttp-pages-v2";
+  `const C = "ttp-pages-v3";
 self.addEventListener("install", (e) => { self.skipWaiting(); e.waitUntil(caches.open(C).then((c) => c.addAll(["./", "./manifest.webmanifest", "./icons/icon-192.png"]))); });
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", (e) => {

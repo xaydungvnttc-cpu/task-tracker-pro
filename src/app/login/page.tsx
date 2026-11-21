@@ -75,7 +75,7 @@ export default function LoginPage() {
               </Button>
               <p className="text-center text-xs text-ink-soft">Vào bằng vai trò Quản trị. Hoặc thử từng vai trò để xem phân quyền:</p>
               <div className="grid grid-cols-2 gap-2">
-                {SEED_USERS.slice(1, 5).map((u) => (
+                {SEED_USERS.filter((u) => ["u2", "u12", "u13", "u5"].includes(u.id)).map((u) => (
                   <button
                     key={u.id}
                     disabled={busy}

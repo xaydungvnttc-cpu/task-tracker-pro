@@ -6,7 +6,7 @@ export function defaultConfig(): NotificationConfig {
     telegram: { enabled: false, botToken: "", chatId: "" },
     email: { enabled: false, provider: "resend", from: "", to: "", resendApiKey: "", smtpHost: "", smtpPort: "587", smtpUser: "", smtpPass: "" },
     webhooks: [],
-    events: { taskAssigned: true, mention: true, statusChange: true, dailyDigest: true, weeklyReport: true },
+    events: { taskAssigned: true, mention: true, statusChange: true, dailyDigest: true, weeklyReport: true, afternoonCheck: true },
   };
 }
 

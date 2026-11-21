@@ -15,7 +15,7 @@ import type { Milestone, Project, ProjectStatus } from "@/lib/types";
 const DOT = { green: "bg-emerald-500", yellow: "bg-amber-400", red: "bg-red-600" } as const;
 
 function blankProject(color: string): Project {
-  return { id: newId(), code: "", name: "", client: "", directorId: null, siteManagerId: null, startDate: null, endDate: null, status: "active", milestones: [], color };
+  return { id: newId(), code: "", name: "", client: "", directorId: null, siteManagerId: null, memberIds: [], startDate: null, endDate: null, status: "active", milestones: [], color };
 }
 
 /** Danh sách dự án và mốc tiến độ hợp đồng. Quản trị, Quản lý thêm và sửa; người khác chỉ xem. */
@@ -77,6 +77,7 @@ export default function ProjectsPage() {
                   <div className="flex items-center gap-1">
                     <Avatar user={userById(p.directorId)} size={22} />
                     <Avatar user={userById(p.siteManagerId)} size={22} />
+                    <span className="ml-1">{new Set([p.directorId, p.siteManagerId, ...(p.memberIds ?? [])].filter(Boolean)).size} người</span>
                   </div>
                 </div>
                 {p.milestones.length > 0 && (
@@ -176,6 +177,30 @@ function ProjectDrawer({ project, readOnly, onClose }: { project: Project; readO
               ))}
             </Select>
           </Field>
+        </div>
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-ink-soft">Thành viên dự án: chỉ những người này, GĐDA, CHT và Ban TGĐ xem được việc của dự án</span>
+          <div className="grid max-h-56 gap-1 overflow-y-auto rounded-lg border border-line p-2 sm:grid-cols-2">
+            {users
+              .filter((u) => u.role !== "owner" && u.department !== "Ban Tổng Giám đốc")
+              .map((u) => {
+                const on = (d.memberIds ?? []).includes(u.id) || u.id === d.directorId || u.id === d.siteManagerId;
+                return (
+                  <label key={u.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-sm hover:bg-muted">
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      disabled={u.id === d.directorId || u.id === d.siteManagerId}
+                      onChange={(e) => set({ memberIds: e.target.checked ? [...(d.memberIds ?? []), u.id] : (d.memberIds ?? []).filter((x) => x !== u.id) })}
+                    />
+                    <span className="truncate">{u.name}</span>
+                    <span className="truncate text-xs text-ink-soft">{u.title}</span>
+                  </label>
+                );
+              })}
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Ngày khởi công">
             <Input type="date" value={d.startDate ?? ""} onChange={(e) => set({ startDate: e.target.value || null })} />
           </Field>

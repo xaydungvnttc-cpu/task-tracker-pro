@@ -111,3 +111,9 @@ export async function addInAppNotifications(list: AppNotification[]): Promise<vo
   list.forEach((n) => batch.set(admin.db.doc(`notifications/${n.id}`), n));
   await batch.commit();
 }
+
+/** Lưu nhận định AI vào settings/aiReport (chỉ Owner đọc được theo firestore.rules) */
+export async function saveAiReport(text: string) {
+  const admin = getAdmin();
+  if (admin) await admin.db.doc("settings/aiReport").set({ text, createdAt: new Date().toISOString() });
+}

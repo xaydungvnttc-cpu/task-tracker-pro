@@ -15,6 +15,10 @@ export const SEED_USERS: User[] = [
   { id: "u11", name: "Phan Quốc Khánh", email: "khanh@demo.vn", role: "manager", department: "Ban Chỉ huy công trường", title: "Giám đốc dự án Phố Nối, Ngọc Thụy", color: "#9333ea" },
   { id: "u12", name: "Lý Thanh Tâm", email: "tam@demo.vn", role: "editor", department: "Ban Chỉ huy công trường", title: "Chỉ huy trưởng Nhà xưởng Phố Nối", color: "#be123c" },
   { id: "u13", name: "Đặng Minh Tuấn", email: "tuan@demo.vn", role: "editor", department: "Ban Chỉ huy công trường", title: "Chỉ huy trưởng Trường Ngọc Thụy", color: "#15803d" },
+  { id: "u14", name: "Nguyễn Hữu Phúc", email: "phuc@demo.vn", role: "editor", department: "Kỹ thuật thi công", title: "Kỹ sư giám sát Phố Nối", color: "#0369a1" },
+  { id: "u15", name: "Trần Văn Quang", email: "quang@demo.vn", role: "member", department: "Kỹ thuật thi công", title: "Kỹ sư kết cấu thép Phố Nối", color: "#a16207" },
+  { id: "u16", name: "Lê Thị Thu", email: "thu@demo.vn", role: "editor", department: "Kỹ thuật thi công", title: "Kỹ sư giám sát Ngọc Thụy", color: "#c026d3" },
+  { id: "u17", name: "Vũ Đình Sơn", email: "son@demo.vn", role: "member", department: "Kỹ thuật thi công", title: "Kỹ sư trắc đạc Ngọc Thụy", color: "#4d7c0f" },
 ];
 
 
@@ -26,17 +30,17 @@ export function buildSeed(today: string): { users: User[]; projects: Project[]; 
   // 3 dự án mẫu: Sông Hồng chậm nhẹ (vàng), Phố Nối chậm lắp dựng thép (đỏ), Ngọc Thụy đúng tiến độ (xanh)
   const projects: Project[] = [
     {
-      id: "p1", code: "SH", name: "Chung cư Sông Hồng Residence", client: "Công ty CP Đầu tư Sông Hồng", directorId: "u2", siteManagerId: "u4",
+      id: "p1", code: "SH", name: "Chung cư Sông Hồng Residence", client: "Công ty CP Đầu tư Sông Hồng", directorId: "u2", siteManagerId: "u4", memberIds: ["u3", "u5", "u6", "u7", "u8", "u9", "u10"],
       startDate: d(-210), endDate: d(240), status: "active", color: "#2563eb",
       milestones: [ms("m1", "Xong phần móng", -150, -152), ms("m2", "Xong phần thô tầng 1-4", -30, -27), ms("m3", "Xong phần thô tầng 5", -3, null), ms("m4", "Cất nóc khối A", 60, null), ms("m5", "Bàn giao", 240, null)],
     },
     {
-      id: "p2", code: "PN", name: "Nhà xưởng KCN Phố Nối B", client: "Công ty TNHH Cơ khí Hưng Yên", directorId: "u11", siteManagerId: "u12",
+      id: "p2", code: "PN", name: "Nhà xưởng KCN Phố Nối B", client: "Công ty TNHH Cơ khí Hưng Yên", directorId: "u11", siteManagerId: "u12", memberIds: ["u3", "u5", "u6", "u7", "u9", "u14", "u15"],
       startDate: d(-75), endDate: d(80), status: "active", color: "#dc2626",
       milestones: [ms("m1", "Xong móng cột", -40, -38), ms("m2", "Lắp dựng xong kết cấu thép", -10, null), ms("m3", "Lợp mái, bao che", 25, null), ms("m4", "Bàn giao", 80, null)],
     },
     {
-      id: "p3", code: "NT", name: "Trường THCS Ngọc Thụy", client: "Ban QLDA quận Long Biên", directorId: "u11", siteManagerId: "u13",
+      id: "p3", code: "NT", name: "Trường THCS Ngọc Thụy", client: "Ban QLDA quận Long Biên", directorId: "u11", siteManagerId: "u13", memberIds: ["u3", "u5", "u6", "u7", "u9", "u16", "u17"],
       startDate: d(-32), endDate: d(330), status: "active", color: "#059669",
       milestones: [ms("m1", "Xong cọc khoan nhồi", 6, null), ms("m2", "Xong móng, giằng móng", 45, null), ms("m3", "Cất nóc", 200, null), ms("m4", "Bàn giao trước năm học mới", 330, null)],
     },
@@ -62,7 +66,7 @@ export function buildSeed(today: string): { users: User[]; projects: Project[]; 
     checklist: [],
     inputLinks: [],
     outputLinks: [],
-    requireOutput: false,
+    requireOutput: true,
     recurrence: null,
     recurrenceSpawned: false,
     comments: [],
@@ -266,6 +270,44 @@ export function buildSeed(today: string): { users: User[]; projects: Project[]; 
     ["Kế hoạch an toàn khi thi công cạnh trường đang học", "u9", 4, -1, 2, "in_progress", "QG", undefined, "p3"],
     ["Phương án giao thông công trường giờ tan học", "u13", 0, null, 6, "todo", "Q", undefined, "p3"],
     ["Hoàn công cọc khoan nhồi đợt 1", "u10", 1, null, 8, "todo", "", undefined, "p3"],
+    // Phố Nối: bổ sung đủ các mảng
+    ["Duyệt bản vẽ chế tạo kết cấu thép nhà xưởng", "u15", 1, -60, -50, "done", "Q", undefined, "p2"],
+    ["Nghiệm thu bu lông neo trước khi đổ bê tông móng", "u14", 1, null, -42, "done", "QG", undefined, "p2"],
+    ["Ký hợp đồng thầu phụ lắp dựng kết cấu thép", "u11", 0, -55, -48, "done", "Q", undefined, "p2"],
+    ["Huấn luyện an toàn khởi công cho tổ lắp dựng", "u9", 4, null, -45, "done", "Q", undefined, "p2"],
+    ["Đổ bê tông móng cột trục E-H", "u14", 1, -30, -26, "done", "QG", undefined, "p2"],
+    ["Kiểm tra mối hàn kết cấu thép tại xưởng chế tạo", "u7", 4, null, -18, "done", "Q", undefined, "p2"],
+    ["Hồ sơ tạm ứng hợp đồng nhà xưởng", "u5", 3, null, -40, "done", "Q", undefined, "p2"],
+    ["Báo cáo tuần gửi Chủ đầu tư Phố Nối", "u12", 0, null, -3, "done", "", undefined, "p2"],
+    ["Đo kiểm tra tim cột, cao độ đỉnh cột trục A-D", "u15", 1, null, -1, "in_progress", "QG", undefined, "p2"],
+    ["Lập kế hoạch bù tiến độ lắp dựng thép (10 ngày chậm)", "u11", 0, -2, 1, "in_progress", "QG", ["Rà khối lượng còn lại", "Tính nhân lực, cẩu cần thêm", "Trình Ban TGĐ duyệt"], "p2"],
+    ["Nghiệm thu lắp dựng kèo nhịp 1-3", "u14", 1, null, 2, "todo", "QG", undefined, "p2"],
+    ["Đặt hàng cửa cuốn, cửa thép nhà xưởng", "u6", 2, null, 14, "todo", "", undefined, "p2"],
+    ["Biện pháp thi công lợp mái tôn trên cao", "u14", 1, null, 10, "todo", "Q", undefined, "p2"],
+    ["Thuê thêm 1 cẩu bánh lốp 25 tấn", "u3", 2, null, 1, "todo", "QG", undefined, "p2"],
+    ["Kiểm tra dây cứu sinh, lưới an toàn khu lắp kèo", "u9", 4, null, -1, "todo", "QG", undefined, "p2"],
+    ["Hồ sơ thanh toán đợt 2 (kết cấu thép)", "u5", 3, null, 20, "todo", "Q", undefined, "p2"],
+    ["Nghiệm thu nền đầm chặt khu A trước khi đổ bê tông", "u7", 4, null, 4, "todo", "Q", undefined, "p2"],
+    ["Họp giao ban tuần với Chủ đầu tư Phố Nối", "u12", 0, null, 2, "todo", "Q", undefined, "p2"],
+    // Ngọc Thụy: bổ sung đủ các mảng
+    ["Xin giấy phép xây dựng và thông báo khởi công", "u11", 0, -50, -35, "done", "Q", undefined, "p3"],
+    ["Khảo sát hiện trạng công trình lân cận trước khi thi công", "u16", 1, null, -33, "done", "Q", undefined, "p3"],
+    ["Lắp dựng rào tôn, biển báo công trường cạnh trường học", "u9", 4, null, -28, "done", "QG", undefined, "p3"],
+    ["Định vị tim cọc khoan nhồi", "u17", 1, null, -27, "done", "QG", undefined, "p3"],
+    ["Ký hợp đồng thầu phụ khoan cọc nhồi", "u11", 0, null, -31, "done", "Q", undefined, "p3"],
+    ["Thí nghiệm dung dịch bentonite", "u7", 4, null, -20, "done", "", undefined, "p3"],
+    ["Nhập kho thép lồng cọc 60 tấn", "u6", 2, null, -22, "done", "G", undefined, "p3"],
+    ["Báo cáo tuần gửi Ban QLDA Long Biên", "u13", 0, null, -2, "done", "", undefined, "p3"],
+    ["Nghiệm thu lồng thép cọc đợt 2", "u16", 1, null, 0, "in_progress", "QG", undefined, "p3"],
+    ["Theo dõi lún, nứt nhà dân lân cận khi khoan cọc", "u17", 1, -9, 4, "in_progress", "Q", undefined, "p3"],
+    ["Đối chiếu khối lượng cọc đợt 1 với thầu phụ", "u5", 3, null, 3, "in_progress", "Q", undefined, "p3"],
+    ["Lập biện pháp thi công móng, đào đất hố móng", "u16", 1, null, 4, "todo", "QG", undefined, "p3"],
+    ["Siêu âm kiểm tra cọc đợt 2", "u7", 4, null, 9, "todo", "Q", undefined, "p3"],
+    ["Đặt bê tông thương phẩm cho đài móng", "u6", 2, null, 16, "todo", "", undefined, "p3"],
+    ["Kế hoạch vận chuyển đất thải ra ngoài giờ học", "u13", 0, null, 5, "todo", "Q", undefined, "p3"],
+    ["Hồ sơ thanh toán đợt 1 (cọc khoan nhồi)", "u5", 3, null, 12, "todo", "Q", undefined, "p3"],
+    ["Kiểm tra an toàn điện tạm, máy khoan cọc", "u9", 4, null, 1, "todo", "G", undefined, "p3"],
+    ["Họp giao ban tuần với Ban QLDA Long Biên", "u13", 0, null, 3, "todo", "Q", undefined, "p3"],
     // Khối văn phòng
     ["Hồ sơ dự thầu gói nhà xưởng KCN Quế Võ", "u3", 5, -6, 9, "in_progress", "Q", undefined, ""],
     ["Gia hạn bảo lãnh thực hiện hợp đồng Sông Hồng", "u5", 5, null, 5, "todo", "QG", undefined, ""],
@@ -304,5 +346,44 @@ export function buildSeed(today: string): { users: User[]; projects: Project[]; 
     { id: "n3", userId: "u4", title: "Bạn được nhắc tên", body: "Trần Thị Bình: nhớ chụp ảnh con kê trước khi mời TVGS", taskId: "t1", read: false, createdAt: at(0, 1) },
   ];
 
-  return { users: SEED_USERS, projects, tasks, notifications };
+  return { users: SEED_USERS, projects, tasks: tasks.map(withEvidence), notifications };
+}
+
+/**
+ * Dữ liệu mẫu đủ hồ sơ: việc nào cũng có tài liệu đầu vào, việc đã xong có link kết quả.
+ * Ví dụ "Nghiệm thu cốt thép sàn tầng 4" → đầu vào "Bản vẽ kết cấu", kết quả "Biên bản nghiệm thu" + "Ảnh hiện trường".
+ * Link mẫu trỏ tới Google Drive, khi dùng thật thay bằng link file thật.
+ */
+const DRIVE = "https://drive.google.com/";
+const SHEET = "https://docs.google.com/spreadsheets/";
+const OUTPUT_BY_KEYWORD: [RegExp, string, string][] = [
+  [/nghiệm thu/i, "Biên bản nghiệm thu có chữ ký TVGS (scan)", DRIVE],
+  [/bê tông|đổ /i, "Phiếu giao nhận bê tông + nhật ký đổ", DRIVE],
+  [/thí nghiệm|ép mẫu|nén mẫu/i, "Kết quả thí nghiệm (PDF)", DRIVE],
+  [/thanh toán|tạm ứng|công nợ|quyết toán|khối lượng/i, "Hồ sơ thanh toán đã nộp + bảng khối lượng", SHEET],
+  [/hợp đồng|phụ lục|báo giá|chọn thầu|đấu thầu/i, "Hợp đồng / phụ lục đã ký (scan)", DRIVE],
+  [/vật tư|đặt hàng|thép|xi măng|nhập/i, "Phiếu nhập kho + chứng chỉ CO/CQ", DRIVE],
+  [/an toàn|hse|huấn luyện|atlđ|pccc/i, "Biên bản kiểm tra an toàn + danh sách ký", DRIVE],
+  [/họp|giao ban/i, "Biên bản họp và bảng phân công", DRIVE],
+  [/báo cáo/i, "File báo cáo đã gửi (PDF)", DRIVE],
+  [/ncr|nứt|thấm|sửa|khắc phục/i, "Biên bản đóng NCR + ảnh trước/sau khắc phục", DRIVE],
+  [/bản vẽ|shop|biện pháp|thiết kế/i, "Bản vẽ / biện pháp đã được duyệt", DRIVE],
+];
+const INPUT_BY_DEPT: Record<string, [string, string]> = {
+  "Ban Tổng Giám đốc": ["Văn bản chỉ đạo / kết luận họp Ban TGĐ", DRIVE],
+  "Ban Chỉ huy công trường": ["Tiến độ thi công tổng thể (bản duyệt)", SHEET],
+  "Kỹ thuật thi công": ["Bản vẽ thi công được duyệt", DRIVE],
+  "Kế hoạch - Vật tư": ["Kế hoạch vật tư tháng", SHEET],
+  "Hợp đồng - Thanh toán (QS)": ["Hợp đồng và bảng khối lượng", SHEET],
+  "An toàn - Chất lượng (HSE, QA/QC)": ["Kế hoạch ATLĐ / ITP kiểm tra chất lượng", DRIVE],
+};
+const SITE_DEPTS = ["Ban Chỉ huy công trường", "Kỹ thuật thi công", "An toàn - Chất lượng (HSE, QA/QC)"];
+
+function withEvidence(t: Task): Task {
+  const inputLinks = t.inputLinks.length ? t.inputLinks : [INPUT_BY_DEPT[t.department] ?? ["Tài liệu liên quan", DRIVE]].map(([label, url]) => ({ label, url }));
+  if (t.status !== "done" || t.outputLinks.length) return { ...t, inputLinks };
+  const hit = OUTPUT_BY_KEYWORD.find(([re]) => re.test(t.title));
+  const outputLinks = [{ label: hit?.[1] ?? "Báo cáo hoàn thành (PDF)", url: hit?.[2] ?? DRIVE }];
+  if (SITE_DEPTS.includes(t.department)) outputLinks.push({ label: "Ảnh hiện trường (album)", url: "https://photos.google.com/" });
+  return { ...t, inputLinks, outputLinks };
 }

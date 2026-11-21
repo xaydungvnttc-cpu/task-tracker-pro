@@ -3,7 +3,7 @@
 import { Repeat, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-provider";
-import { QuickStatusButton } from "@/components/task-card";
+import { QuickStatusButton, ResultLinks } from "@/components/task-card";
 import { Avatar, Card, DueBadge, EmptyState, Input, PageHeader, PriorityBadges, ProgressBar, Select, StatusBadge } from "@/components/ui";
 import { STATUS_LABEL, STATUS_ORDER } from "@/lib/constants";
 import { isOverdue, progressOf } from "@/lib/tasks";
@@ -72,6 +72,7 @@ export default function TasksPage() {
                   <PriorityBadges task={t} />
                   <span className="hidden sm:inline">{t.department}</span>
                 </div>
+                <ResultLinks task={t} />
               </div>
               <div className="hidden w-28 md:block">
                 <ProgressBar value={pct} tone={pct === 100 ? "green" : "brand"} />
