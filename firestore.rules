@@ -18,6 +18,8 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if signedIn();
+      // Owner được tạo, xóa hồ sơ nhân sự mẫu (mã bắt đầu bằng "mau-")
+      allow create, delete: if isOwner() && uid.matches('mau-.*');
       allow create: if signedIn() && uid == request.auth.uid && (
         request.resource.data.role == 'member' ||
         (request.resource.data.role == 'owner'

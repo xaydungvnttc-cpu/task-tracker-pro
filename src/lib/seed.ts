@@ -146,6 +146,93 @@ export function buildSeed(today: string): { users: User[]; tasks: Task[]; notifi
     base({ id: "t47", title: "Nghiệm thu hoàn thành phần thô tầng 1 đến 5", assigneeId: "u2", watcherIds: ["u1"], important: true, dueDate: d(40) }),
   ];
 
+  // Bộ việc bổ sung (t48 trở đi) cho đủ khoảng 100 đầu việc, phủ đủ các mảng của Ban chỉ huy
+  // Cột: tiêu đề, người làm, phòng ban (chỉ số DEPTS), ngày bắt đầu, hạn chót (số ngày so với hôm nay), trạng thái, cờ (Q = quan trọng, G = gấp), checklist
+  type Row = [string, string | null, number, number | null, number | null, Task["status"], string, string[]?];
+  const DEPTS = ["Ban Chỉ huy công trường", "Kỹ thuật thi công", "Kế hoạch - Vật tư", "Hợp đồng - Thanh toán (QS)", "An toàn - Chất lượng (HSE, QA/QC)"];
+  const rows: Row[] = [
+    // Đã hoàn thành (lịch sử)
+    ["Bàn giao mặt bằng thi công khối B cho tổ đội", "u2", 1, null, -44, "done", "QG"],
+    ["Ký hợp đồng thầu phụ cốp pha nhôm", "u1", 0, -50, -40, "done", "Q"],
+    ["Phê duyệt tiến độ tổng thể điều chỉnh lần 1", "u1", 0, null, -38, "done", "Q"],
+    ["Đổ bê tông cột vách tầng 4 khối A", "u4", 1, -30, -29, "done", "QG"],
+    ["Tháo dỡ cốp pha sàn tầng 3 khối A", "u4", 1, -27, -25, "done", "G"],
+    ["Nghiệm thu điện nước âm sàn tầng 4", "u8", 1, null, -24, "done", "QG"],
+    ["Lập biên bản xác nhận khối lượng phát sinh cọc khoan nhồi", "u5", 3, null, -36, "done", "Q"],
+    ["Hoàn công móng khối B", "u10", 1, -32, -27, "done", "Q"],
+    ["Diễn tập phòng cháy chữa cháy công trường", "u9", 4, null, -19, "done", "Q"],
+    ["Nhập kho gạch block 60.000 viên", "u6", 2, null, -16, "done", "G"],
+    ["Kiểm định cẩu tháp TC-01 định kỳ", "u9", 4, null, -15, "done", "QG"],
+    ["Quyết toán khối lượng thầu phụ ép cọc", "u5", 3, -30, -14, "done", "Q"],
+    ["Nghiệm thu cốt thép cột vách tầng 5 khối A", "u4", 1, null, -11, "done", "QG"],
+    ["Đổ bê tông cột vách tầng 5 khối A", "u2", 1, -10, -9, "done", "QG"],
+    ["Đo lún, quan trắc công trình lân cận đợt 4", "u10", 1, null, -8, "done", "Q"],
+    ["Chọn nhà cung cấp cửa nhôm kính", "u3", 2, -20, -7, "done", "Q"],
+    ["Kiểm tra hồ sơ an toàn tổ đội xây tô", "u9", 4, null, -5, "done", ""],
+    ["Nghiệm thu xây tường tầng 2 khối A", "u7", 4, null, -4, "done", "Q"],
+    ["Cập nhật nhật ký thi công tuần trước", "u4", 1, null, -3, "done", ""],
+    // Đang làm
+    ["Xây tường bao che tầng 3 khối A", "u4", 1, -6, 6, "in_progress", "Q", ["Định vị tường", "Xây đến cao độ lanh tô", "Đổ lanh tô", "Xây hoàn thiện"]],
+    ["Lắp đặt ống thoát nước đứng trục kỹ thuật khối A", "u8", 1, -4, 5, "in_progress", "Q"],
+    ["Lập bản vẽ shop cầu thang bộ tầng 6 đến 10", "u4", 1, -2, 3, "in_progress", "QG"],
+    ["Tổng hợp nhu cầu vật tư hoàn thiện đợt 1", "u3", 2, -3, 4, "in_progress", "Q"],
+    ["Đối chiếu khối lượng thầu phụ xây tô tháng này", "u5", 3, -2, 2, "in_progress", "QG"],
+    ["Lập dự toán phát sinh thay đổi vật liệu chống thấm", "u5", 3, -5, -1, "in_progress", "QG"],
+    ["Kiểm tra mẫu vữa xây, vữa trát tại hiện trường", "u7", 4, -1, 1, "in_progress", "G"],
+    ["Cập nhật kế hoạch an toàn khi thi công trên cao", "u9", 4, -3, 2, "in_progress", "Q"],
+    ["Đo kiểm tra độ phẳng sàn tầng 4 khối A", "u10", 1, null, -2, "in_progress", "QG"],
+    ["Rà soát hợp đồng cung cấp thang máy", "u1", 0, -4, 3, "in_progress", "Q"],
+    ["Lập kế hoạch nhân lực tháng sau", "u2", 1, -1, 5, "in_progress", "Q"],
+    ["Theo dõi thép tồn kho, đề xuất điều chuyển", "u6", 2, -2, 1, "in_progress", "G"],
+    // Tạm dừng
+    ["Lắp đặt vận thăng lồng khối B", "u6", 2, -3, 4, "on_hold", "QG"],
+    ["Thi công hố ga thoát nước ngoài nhà", "u2", 1, 3, 15, "on_hold", ""],
+    ["Đặt hàng thiết bị vệ sinh mẫu", "u3", 2, null, 9, "on_hold", ""],
+    ["Điều chỉnh hợp đồng thầu phụ điện nước theo khối lượng mới", "u5", 3, null, 6, "on_hold", "Q"],
+    // Sắp tới
+    ["Nghiệm thu cốt thép cột vách tầng 6 khối A", "u4", 1, null, 4, "todo", "QG"],
+    ["Đổ bê tông cột vách tầng 6 khối A", "u2", 1, 5, 6, "todo", "QG"],
+    ["Lắp dựng cốp pha sàn tầng 6 khối A", "u4", 1, 6, 10, "todo", "Q"],
+    ["Định vị tim trục, cao độ tầng 6", "u10", 1, null, 3, "todo", "QG"],
+    ["Mời TVGS nghiệm thu chống thấm vệ sinh tầng 2", "u7", 4, null, 2, "todo", "QG"],
+    ["Đặt bê tông thương phẩm cho sàn tầng 6", "u6", 2, null, 7, "todo", "G"],
+    ["Lấy báo giá 3 nhà cung cấp sơn nước", "u3", 2, null, 11, "todo", ""],
+    ["Lập hồ sơ đề nghị tạm ứng vật tư hoàn thiện", "u5", 3, null, 8, "todo", "Q"],
+    ["Huấn luyện an toàn định kỳ quý cho toàn công trường", "u9", 4, null, 13, "todo", "Q"],
+    ["Kiểm tra hệ thống chống sét tạm, nối đất cẩu tháp", "u9", 4, null, 5, "todo", "G"],
+    ["Lập biện pháp thi công mặt dựng nhôm kính", "u2", 1, 4, 14, "todo", "Q"],
+    ["Họp phối hợp thầu phụ MEP và kết cấu tầng 6", "u8", 1, null, 3, "todo", "Q"],
+    ["Đo lún, quan trắc công trình lân cận đợt 5", "u10", 1, null, 9, "todo", "Q"],
+    ["Rà soát hồ sơ chất lượng phần móng để nghiệm thu giai đoạn", "u7", 4, 2, 16, "todo", "Q"],
+    ["Báo cáo tiến độ tháng gửi Ban Giám đốc", "u1", 0, null, 9, "todo", "Q"],
+    ["Làm việc với Chủ đầu tư về điều chỉnh mặt bằng tầng hầm", "u1", 0, null, -1, "todo", "QG"],
+    ["Cập nhật bản vẽ hoàn công điện nước tầng 4", "u8", 1, null, null, "todo", ""],
+    ["Sắp xếp lại bãi tập kết vật liệu khu vực cổng 2", "u6", 2, null, 6, "todo", ""],
+    ["Bảo dưỡng máy phát điện dự phòng công trường", "u6", 2, null, 4, "todo", ""],
+  ];
+  rows.forEach(([title, assigneeId, dept, start, due, status, flags, items], i) => {
+    const multi = start !== null && due !== null;
+    const doneAt = status === "done" && due !== null ? at(due + (i % 5 === 0 ? 1 : 0), 10) : null;
+    tasks.push(
+      base({
+        id: `t${48 + i}`,
+        title,
+        assigneeId,
+        department: DEPTS[dept],
+        important: flags.includes("Q"),
+        urgent: flags.includes("G"),
+        timeType: due === null ? "none" : multi ? "multi" : "single",
+        startDate: multi ? d(start) : null,
+        dueDate: due === null ? null : d(due),
+        status,
+        completedAt: doneAt,
+        createdBy: dept === 0 ? "u1" : "u2",
+        createdAt: at(Math.min(start ?? due ?? 0, due ?? 0) - 7, 2),
+        checklist: items ? ck(items.map((t, k) => [t, status === "done" || k < 1] as [string, boolean])) : [],
+      }),
+    );
+  });
+
   const notifications: AppNotification[] = [
     { id: "n1", userId: "u1", title: "Việc quá hạn", body: "Lập hồ sơ thanh toán đợt 3 gửi Chủ đầu tư đã quá hạn 1 ngày", taskId: "t2", read: false, createdAt: at(0, 1) },
     { id: "n2", userId: "u1", title: "Hoàn thành", body: "Trần Thị Bình đã hoàn thành: Nghiệm thu chống thấm sàn mái khối B", taskId: "t18", read: false, createdAt: at(-1, 9) },

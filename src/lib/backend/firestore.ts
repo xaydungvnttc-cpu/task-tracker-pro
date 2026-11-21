@@ -13,6 +13,7 @@ import {
 import { collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { getFirebase } from "../firebase";
 import { AVATAR_COLORS, DEPARTMENTS } from "../constants";
+import { buildSeed } from "../seed";
 import type { AppNotification, NotificationConfig, Task, User } from "../types";
 import type { AuthBackend, DataBackend } from "./types";
 
@@ -68,6 +69,44 @@ export const firestoreData: DataBackend = {
     await setDoc(doc(getFirebase().db, "settings", "integrations"), clean(c));
   },
 };
+
+/* ---------------- Dữ liệu mẫu trên dữ liệu thật ---------------- */
+
+/** Mọi bản ghi mẫu có mã bắt đầu bằng "mau-" để xóa gọn một lần (kể cả kỳ định kỳ sinh ra sau: "mau-t5~2026-12-04") */
+export const SAMPLE_PREFIX = "mau-";
+
+/** Ghi lần lượt từng nhóm 20 bản ghi, tránh dồn quá nhiều yêu cầu cùng lúc */
+async function inChunks<T>(items: T[], fn: (x: T) => Promise<void>) {
+  for (let i = 0; i < items.length; i += 20) await Promise.all(items.slice(i, i + 20).map(fn));
+}
+
+/**
+ * Nạp bộ việc mẫu ngành xây dựng vào Firestore. Người đứng đầu bộ mẫu (u1) chính là Owner đang đăng nhập,
+ * 9 nhân sự còn lại là hồ sơ mẫu (không đăng nhập được), Owner giao lại việc cho người thật khi họ vào.
+ */
+export async function importSampleData(ownerUid: string, today: string): Promise<number> {
+  const { db } = getFirebase();
+  const seed = buildSeed(today);
+  const id = (u: string) => (u === "u1" ? ownerUid : SAMPLE_PREFIX + u);
+  const users = seed.users.filter((u) => u.id !== "u1").map((u) => ({ ...u, id: id(u.id), email: "" }));
+  const tasks = seed.tasks.map((t) => ({
+    ...t,
+    id: SAMPLE_PREFIX + t.id,
+    assigneeId: t.assigneeId && id(t.assigneeId),
+    watcherIds: t.watcherIds.map(id),
+    createdBy: id(t.createdBy),
+    comments: t.comments.map((c) => ({ ...c, userId: id(c.userId) })),
+  }));
+  await inChunks(users, (u) => setDoc(doc(db, "users", u.id), clean(u)));
+  await inChunks(tasks, (t) => setDoc(doc(db, "tasks", t.id), clean(t)));
+  return tasks.length;
+}
+
+export async function clearSampleData(taskIds: string[], userIds: string[]) {
+  const { db } = getFirebase();
+  await inChunks(taskIds, (x) => deleteDoc(doc(db, "tasks", x)));
+  await inChunks(userIds, (x) => deleteDoc(doc(db, "users", x)));
+}
 
 /**
  * Lần đầu đăng nhập thì tạo hồ sơ. Người đầu tiên của hệ thống thành Owner
