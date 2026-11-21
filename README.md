@@ -128,6 +128,16 @@ Gói Hobby của Vercel cho chạy cron tối đa 1 lần/ngày mỗi job, đủ
 
 ---
 
+## Nhắc việc, phân quyền dự án, cảnh báo sớm
+
+- **Lịch nhắc tự động** (GitHub Actions, `.github/workflows/nhac-viec.yml`): 8:00 sáng bản tổng hợp, 16:00 (thứ 2 đến thứ 7) việc hạn hôm nay chưa xong, 20:00 Chủ nhật báo cáo tuần, 15 phút một lần đọc tin nhắn gửi bot.
+- **Quy tắc nhắc** (`src/lib/reminders.ts`): nhắc người làm khi còn 3 ngày, 1 ngày, đúng hạn, nhắc lại mỗi ngày khi quá hạn; trễ từ 2 ngày báo quản lý phòng, trễ từ 5 ngày báo Ban TGĐ; việc chưa có người nhận, việc đang làm 7 ngày chưa cập nhật hiện ở mục "Cần chú ý" trang Hôm nay.
+- **Hoàn thành phải có link kết quả** (biên bản, ảnh, file).
+- **Phân quyền xem theo dự án** (`src/lib/projects.ts`): mỗi người chỉ thấy dự án có tên mình (GĐDA, CHT, thành viên dự án ở trang Dự án); Owner và Ban Tổng Giám đốc thấy tất cả. Lưu ý: đây là lọc hiển thị trong app.
+- **Cảnh báo sớm** (`src/lib/early-warning.ts`): dự án có mốc chậm, mốc sắp tới mà tồn việc trễ, khối lượng 2 tuần tới vượt năng lực 2 tuần qua → đề xuất phương án theo nhóm vấn đề (vật tư, hồ sơ thanh toán, chất lượng, an toàn, nhân lực), bấm "Giao việc" để giao ngay.
+- **Zalo Bot**: người đầu tiên nhắn bot nhận bản tổng hợp công ty. Người khác vào Cài đặt > Hồ sơ của tôi lấy mã, nhắn "LK <mã>" cho bot để nhận nhắc việc riêng. Tin bắt đầu "Việc:" hoặc "Gấp:" (hoặc có từ khóa công việc) tự thành việc trong app.
+- **Trợ lý AI** (`src/lib/server/ai-assistant.ts`, không bắt buộc): thêm secret `ANTHROPIC_API_KEY` vào GitHub (Settings > Secrets and variables > Actions) thì mỗi sáng có nhận định "việc nên chỉ đạo hôm nay" gửi Zalo và hiện ở trang Điều hành công ty.
+
 ## Cấu trúc mã
 
 ```
