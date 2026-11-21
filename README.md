@@ -15,6 +15,8 @@ Công nghệ: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Luc
 
 `node static-demo/build.mjs` đóng gói chế độ Demo thành một file `static-demo/dist/task-tracker-pro.html` tự chạy, không cần máy chủ (định tuyến bằng `#dashboard`, `#kanban`...). Dùng để đăng lên một link chia sẻ. Bản này không gửi được Zalo/Telegram/Email và không có đăng nhập thật; các nút đó được khóa kèm ghi chú.
 
+**Đang chạy tại:** https://xaydungvnttc-cpu.github.io/task-tracker-pro/ (GitHub Pages, nhánh `gh-pages`). Cập nhật: `node static-demo/build.mjs && node static-demo/pages.mjs`, rồi đẩy nội dung `static-demo/pages` lên nhánh `gh-pages`.
+
 ## (a) Chạy trên máy
 
 Cần Node.js 20.9 trở lên.
