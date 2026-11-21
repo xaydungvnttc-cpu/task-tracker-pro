@@ -17,6 +17,8 @@ Công nghệ: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Luc
 
 **Đang chạy tại:** https://xaydungvnttc-cpu.github.io/task-tracker-pro/ (GitHub Pages, nhánh `gh-pages`). Cập nhật: `node static-demo/build.mjs && node static-demo/pages.mjs`, rồi đẩy nội dung `static-demo/pages` lên nhánh `gh-pages`.
 
+Bản này đã dùng **đăng nhập thật và dữ liệu thật** (Firebase dự án `task-tracker-pro-809d9`, gói miễn phí Spark). Cấu hình web nằm ở `static-demo/firebase.json` (khóa web của Firebase là công khai, an toàn nhờ `firestore.rules`). Xóa file này rồi build lại thì quay về bản Demo. Người đăng ký đầu tiên là Owner. Sửa `firestore.rules` thì dán lại vào Firebase console, mục Firestore, tab Rules, bấm Publish.
+
 ## (a) Chạy trên máy
 
 Cần Node.js 20.9 trở lên.
