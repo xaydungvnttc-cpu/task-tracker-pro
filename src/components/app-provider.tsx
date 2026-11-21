@@ -245,7 +245,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const deleteTask = useCallback(
     async (t: Task) => {
-      if (!me || !can.deleteTask(me)) return toast("Chỉ Owner/Manager được xóa việc", "error");
+      if (!me || !can.deleteTask(me)) return toast("Chỉ Quản trị hoặc Quản lý được xóa việc", "error");
       await data.deleteTask(t.id);
       setDrawer(null);
       toast("Đã xóa việc", "success");

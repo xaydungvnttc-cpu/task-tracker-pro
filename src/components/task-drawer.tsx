@@ -239,7 +239,7 @@ export function TaskDrawer() {
         {/* Checklist */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-ink-soft">Checklist / Việc con</span>
+            <span className="text-xs font-medium text-ink-soft">Các bước cần làm</span>
             <span className="text-xs font-semibold text-ink">{pct}%</span>
           </div>
           <ProgressBar value={pct} tone={pct === 100 ? "green" : "brand"} />
@@ -272,9 +272,9 @@ export function TaskDrawer() {
           )}
         </div>
 
-        <LinkEditor label="Tài liệu đầu vào (Input)" links={draft.inputLinks} editable={fullEdit} onChange={(l) => set({ inputLinks: l })} />
+        <LinkEditor label="Tài liệu đầu vào" links={draft.inputLinks} editable={fullEdit} onChange={(l) => set({ inputLinks: l })} />
         <div className={clsx("rounded-xl", outputMissing && "ring-2 ring-amber-400 ring-offset-2 ring-offset-surface")}>
-          <LinkEditor label="Kết quả bàn giao (Output)" links={draft.outputLinks} editable={progressEdit} onChange={(l) => set({ outputLinks: l })} />
+          <LinkEditor label="Kết quả bàn giao" links={draft.outputLinks} editable={progressEdit} onChange={(l) => set({ outputLinks: l })} />
         </div>
         <Toggle checked={draft.requireOutput} disabled={!fullEdit} onChange={(v) => set({ requireOutput: v })} label="Bắt buộc có link kết quả khi Hoàn thành" />
 

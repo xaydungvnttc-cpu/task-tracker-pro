@@ -31,7 +31,7 @@ export default function MatrixPage() {
 
   return (
     <>
-      <PageHeader title="Ma trận Eisenhower" desc="Việc tự xếp vào 4 ô theo cờ Quan trọng và Khẩn cấp. Kéo sang ô khác để đổi độ ưu tiên." />
+      <PageHeader title="Ma trận ưu tiên" desc="Việc tự xếp vào 4 ô theo cờ Quan trọng và Khẩn cấp. Kéo sang ô khác để đổi độ ưu tiên." />
       <DragBoard
         columns={columns}
         canDrag={(t) => !!me && can.editTask(me, t)}

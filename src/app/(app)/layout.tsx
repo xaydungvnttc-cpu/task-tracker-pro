@@ -34,8 +34,8 @@ const NAV = [
   { href: "/dashboard", label: "Tổng quan", icon: LayoutDashboard, mobile: true },
   { href: "/today", label: "Hôm nay", icon: CalendarCheck, mobile: true },
   { href: "/tasks", label: "Danh sách việc", icon: ListTodo, mobile: false },
-  { href: "/matrix", label: "Eisenhower", icon: Grid2x2, mobile: true },
-  { href: "/kanban", label: "Kanban", icon: KanbanSquare, mobile: true },
+  { href: "/matrix", label: "Ma trận ưu tiên", icon: Grid2x2, mobile: true },
+  { href: "/kanban", label: "Bảng tiến độ", icon: KanbanSquare, mobile: true },
   { href: "/calendar", label: "Lịch biểu", icon: CalendarDays, mobile: true },
   { href: "/members", label: "Thành viên", icon: Users, mobile: false },
   { href: "/settings", label: "Cài đặt tích hợp", icon: Settings, mobile: false },
@@ -109,7 +109,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <LogOut size={16} />
             </button>
           </div>
-          {mode === "demo" && <div className="mt-2 rounded-md bg-amber-100 px-2 py-1 text-center text-[11px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">Chế độ Demo · dữ liệu lưu trên trình duyệt</div>}
+          {mode === "demo" && <div className="mt-2 rounded-md bg-amber-100 px-2 py-1 text-center text-[11px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">Bản dùng thử · dữ liệu lưu trên trình duyệt</div>}
         </div>
       </aside>
       {menuOpen && <div className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden" onClick={() => setMenuOpen(false)} />}

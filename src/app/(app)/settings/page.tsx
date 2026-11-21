@@ -84,7 +84,7 @@ export default function SettingsPage() {
     <>
       <PageHeader
         title="Cài đặt tích hợp"
-        desc={owner ? "Bật kênh nào thì nhắc việc, báo cáo và sự kiện sẽ gửi qua kênh đó." : "Chỉ Owner xem và sửa được token tích hợp."}
+        desc={owner ? "Bật kênh nào thì nhắc việc, báo cáo và sự kiện sẽ gửi qua kênh đó." : "Chỉ Quản trị xem và sửa được mã kết nối."}
         actions={
           owner && (
             <Button variant="primary" disabled={!!busy} onClick={save}>
@@ -138,10 +138,10 @@ export default function SettingsPage() {
             <Channel icon={<Mail size={18} className="text-rose-500" />} title="Email (Resend / SMTP)" enabled={cfg.email.enabled} onToggle={(v) => set("email", { enabled: v })} action={testBtn("email")}>
               <Segmented value={cfg.email.provider} onChange={(v) => set("email", { provider: v })} options={[{ value: "resend", label: "Resend" }, { value: "smtp", label: "SMTP (Gmail, Outlook...)" }]} />
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Người gửi (From)">
+                <Field label="Người gửi">
                   <Input value={cfg.email.from} onChange={(e) => set("email", { from: e.target.value })} placeholder="Task Tracker <no-reply@congty.vn>" />
                 </Field>
-                <Field label="Người nhận (To)" hint="Cách nhau dấu phẩy">
+                <Field label="Người nhận" hint="Cách nhau dấu phẩy">
                   <Input value={cfg.email.to} onChange={(e) => set("email", { to: e.target.value })} />
                 </Field>
               </div>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                     {busy === "weekly-report" && <Loader2 size={14} className="animate-spin" />} Chạy thử báo cáo tuần
                   </Button>
                 </div>
-                {mode === "demo" && <p className="text-xs text-ink-soft">Bản Demo: server soạn tin từ dữ liệu mẫu, gửi qua các kênh đang nhập trên form.</p>}
+                {mode === "demo" && <p className="text-xs text-ink-soft">Bản dùng thử: máy chủ soạn tin từ dữ liệu mẫu, gửi qua các kênh đang nhập trên form.</p>}
                 {preview && <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-xs thin-scroll">{preview}</pre>}
               </div>
             </Card>
@@ -225,7 +225,7 @@ export default function SettingsPage() {
 
         {mode === "demo" && (
           <Card>
-            <CardTitle>Dữ liệu Demo</CardTitle>
+            <CardTitle>Dữ liệu dùng thử</CardTitle>
             <div className="space-y-3 p-4 text-sm text-ink-soft">
               <p>Dữ liệu đang nằm trong trình duyệt này. Khôi phục để quay lại bộ dữ liệu mẫu tính theo ngày hôm nay.</p>
               <ConfirmButton label={<><RotateCcw size={16} /> Khôi phục dữ liệu mẫu</>} confirmLabel="Bấm lần nữa để xóa mọi thay đổi" onConfirm={() => { resetDemoData(); toast("Đã nạp lại dữ liệu mẫu", "success"); }} />
@@ -313,7 +313,7 @@ function Profile() {
             <Input value={p.title} onChange={(e) => setP({ ...p, title: e.target.value })} />
           </Field>
         </div>
-        <Field label="Phòng ban" hint={can.manageMembers(me!) ? undefined : "Owner đổi phòng ban cho bạn ở trang Thành viên"}>
+        <Field label="Phòng ban" hint={can.manageMembers(me!) ? undefined : "Quản trị đổi phòng ban cho bạn ở trang Thành viên"}>
           <Select value={p.department} disabled={!can.manageMembers(me!)} onChange={(e) => setP({ ...p, department: e.target.value })}>
             {Array.from(new Set([...DEPARTMENTS, p.department])).map((d) => (
               <option key={d}>{d}</option>

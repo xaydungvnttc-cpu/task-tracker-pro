@@ -17,7 +17,7 @@ export default function MembersPage() {
   const [draft, setDraft] = useState({ name: "", email: "", department: DEPARTMENTS[1], role: "member" as Role });
 
   const update = (u: User, p: Partial<User>) => {
-    if (u.id === me!.id && p.role && p.role !== "owner") return toast("Không thể tự hạ quyền Owner của chính mình", "error");
+    if (u.id === me!.id && p.role && p.role !== "owner") return toast("Không thể tự hạ quyền Quản trị của chính mình", "error");
     saveUser({ ...u, ...p });
   };
 
@@ -25,12 +25,12 @@ export default function MembersPage() {
     if (!draft.name.trim() || !draft.email.trim()) return;
     saveUser({ id: newId(), ...draft, color: AVATAR_COLORS[users.length % AVATAR_COLORS.length] });
     setDraft({ ...draft, name: "", email: "" });
-    toast("Đã thêm thành viên. Mật khẩu mặc định bản Demo: demo123", "success");
+    toast("Đã thêm thành viên. Mật khẩu mặc định bản dùng thử: demo123", "success");
   };
 
   return (
     <>
-      <PageHeader title="Thành viên & phân quyền" desc={admin ? "Owner đổi được vai trò và phòng ban của mọi người." : "Chỉ Owner được đổi vai trò."} />
+      <PageHeader title="Thành viên & phân quyền" desc={admin ? "Quản trị đổi được vai trò và phòng ban của mọi người." : "Chỉ Quản trị được đổi vai trò."} />
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardTitle>{users.length} thành viên</CardTitle>
@@ -98,7 +98,7 @@ export default function MembersPage() {
                   </>
                 ) : (
                   <p className="text-sm text-ink-soft">
-                    Gửi link app cho đồng nghiệp để tự đăng ký (email hoặc Google). Tài khoản mới mặc định là Member, sau đó bạn nâng quyền ở danh sách bên cạnh.
+                    Gửi link app cho đồng nghiệp để tự đăng ký (email hoặc Google). Tài khoản mới mặc định là Thành viên, sau đó bạn nâng quyền ở danh sách bên cạnh.
                   </p>
                 )}
               </div>

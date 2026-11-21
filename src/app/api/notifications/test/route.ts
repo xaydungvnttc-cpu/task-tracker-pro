@@ -7,7 +7,7 @@ import type { ChannelKey, NotificationConfig } from "@/lib/types";
 /** Nút "Gửi thử" cho từng kênh, dùng đúng cấu hình đang nhập trên form (chưa cần lưu) */
 export async function POST(req: Request) {
   const user = await currentUser(req);
-  if (user !== "demo" && user?.role !== "owner") return NextResponse.json({ error: "Chỉ Owner được gửi thử" }, { status: 403 });
+  if (user !== "demo" && user?.role !== "owner") return NextResponse.json({ error: "Chỉ Quản trị được gửi thử" }, { status: 403 });
   const { channel, config } = (await req.json()) as { channel: ChannelKey; config: NotificationConfig };
   const results = await sendAll(withDefaults(config), {
     title: "🔔 Tin nhắn thử từ Task Tracker Pro",

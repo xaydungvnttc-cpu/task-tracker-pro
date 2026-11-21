@@ -14,17 +14,17 @@ export const DEPARTMENTS = [
 ];
 
 export const ROLE_LABEL: Record<Role, string> = {
-  owner: "Owner",
-  manager: "Manager",
-  editor: "Editor",
-  member: "Member",
+  owner: "Quản trị",
+  manager: "Quản lý",
+  editor: "Điều phối",
+  member: "Thành viên",
 };
 
 export const ROLE_DESC: Record<Role, string> = {
   owner: "Toàn quyền, quản lý thành viên và tích hợp",
   manager: "Giao việc, xóa việc, xem báo cáo tổng",
   editor: "Tạo việc, sửa việc mình tạo hoặc được giao",
-  member: "Cập nhật tiến độ, checklist, bàn giao việc được giao",
+  member: "Cập nhật tiến độ, các bước, bàn giao việc được giao",
 };
 
 export const STATUS_ORDER: TaskStatus[] = ["todo", "in_progress", "on_hold", "done"];

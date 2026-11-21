@@ -30,7 +30,7 @@ export default function KanbanPage() {
 
   return (
     <>
-      <PageHeader title="Bảng Kanban" desc="Kéo thẻ sang cột khác để đổi trạng thái. Trên điện thoại: giữ thẻ một nhịp rồi kéo." />
+      <PageHeader title="Bảng tiến độ" desc="Kéo thẻ sang cột khác để đổi trạng thái. Trên điện thoại: giữ thẻ một nhịp rồi kéo." />
       <DragBoard
         columns={columns}
         canDrag={(t) => !!me && can.updateProgress(me, t)}

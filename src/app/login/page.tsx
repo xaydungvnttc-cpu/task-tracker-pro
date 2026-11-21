@@ -50,7 +50,7 @@ export default function LoginPage() {
         <div className="space-y-5">
           <h2 className="text-3xl font-bold leading-tight">Giao việc rõ ràng, theo dõi sát sao, nhắc việc tự động.</h2>
           <ul className="space-y-2 text-white/85">
-            {["Dashboard KPI, Kanban, Ma trận Eisenhower, Lịch Gantt", "Việc định kỳ tự sinh, checklist, bàn giao có link kết quả", "Nhắc 8:00 sáng và báo cáo tuần qua Zalo, Telegram, Email"].map((t) => (
+            {["Bảng chỉ số, bảng tiến độ, ma trận ưu tiên, lịch theo ngày", "Việc định kỳ tự tạo, chia bước, bàn giao kèm link kết quả", "Nhắc 8:00 sáng và báo cáo tuần qua Zalo, Telegram, Email"].map((t) => (
               <li key={t} className="flex gap-2">
                 <CheckCircle2 size={20} className="shrink-0 text-emerald-300" /> {t}
               </li>
@@ -71,9 +71,9 @@ export default function LoginPage() {
           {mode === "demo" && (
             <div className="space-y-3 rounded-xl border border-brand-100 bg-brand-50 p-4 dark:border-brand-700/40 dark:bg-brand-700/10">
               <Button variant="primary" className="h-12 w-full text-base" disabled={busy} onClick={() => run(() => auth.loginDemo("u1"))}>
-                <Rocket size={18} /> Đăng nhập nhanh bản Demo (1-Click)
+                <Rocket size={18} /> Vào nhanh bản dùng thử
               </Button>
-              <p className="text-center text-xs text-ink-soft">Vào bằng vai trò Owner. Hoặc thử từng vai trò để xem phân quyền:</p>
+              <p className="text-center text-xs text-ink-soft">Vào bằng vai trò Quản trị. Hoặc thử từng vai trò để xem phân quyền:</p>
               <div className="grid grid-cols-2 gap-2">
                 {SEED_USERS.slice(1, 5).map((u) => (
                   <button
@@ -137,7 +137,7 @@ export default function LoginPage() {
               </svg>
               Tiếp tục với Google
             </Button>
-            {mode === "demo" && <p className="mt-3 text-center text-[11px] text-ink-soft">Bản Demo lưu dữ liệu ngay trên trình duyệt này. Điền key Firebase để bật đăng nhập thật.</p>}
+            {mode === "demo" && <p className="mt-3 text-center text-[11px] text-ink-soft">Bản dùng thử lưu dữ liệu ngay trên trình duyệt này. Điền key Firebase để bật đăng nhập thật.</p>}
           </div>
         </div>
       </div>
