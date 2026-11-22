@@ -13,7 +13,7 @@ import {
 import { collection, deleteDoc, doc, getDoc, onSnapshot, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { getFirebase } from "../firebase";
 import { AVATAR_COLORS, DEPARTMENTS } from "../constants";
-import { buildSeed } from "../seed";
+import { SAMPLE_PREFIX, buildOwnerSample } from "../seed";
 import type { AppNotification, NotificationConfig, Project, Task, User } from "../types";
 import type { AuthBackend, DataBackend } from "./types";
 
@@ -80,7 +80,7 @@ export const firestoreData: DataBackend = {
 /* ---------------- Dữ liệu mẫu trên dữ liệu thật ---------------- */
 
 /** Mọi bản ghi mẫu có mã bắt đầu bằng "mau-" để xóa gọn một lần (kể cả kỳ định kỳ sinh ra sau: "mau-t5~2026-12-04") */
-export const SAMPLE_PREFIX = "mau-";
+export { SAMPLE_PREFIX };
 
 /** Ghi lần lượt từng nhóm 20 bản ghi, tránh dồn quá nhiều yêu cầu cùng lúc */
 async function inChunks<T>(items: T[], fn: (x: T) => Promise<void>) {
@@ -93,19 +93,7 @@ async function inChunks<T>(items: T[], fn: (x: T) => Promise<void>) {
  */
 export async function importSampleData(ownerUid: string, today: string): Promise<number> {
   const { db } = getFirebase();
-  const seed = buildSeed(today);
-  const id = (u: string) => (u === "u1" ? ownerUid : SAMPLE_PREFIX + u);
-  const users = seed.users.filter((u) => u.id !== "u1").map((u) => ({ ...u, id: id(u.id), email: "" }));
-  const tasks = seed.tasks.map((t) => ({
-    ...t,
-    id: SAMPLE_PREFIX + t.id,
-    assigneeId: t.assigneeId && id(t.assigneeId),
-    watcherIds: t.watcherIds.map(id),
-    createdBy: id(t.createdBy),
-    projectId: t.projectId ? SAMPLE_PREFIX + t.projectId : null,
-    comments: t.comments.map((c) => ({ ...c, userId: id(c.userId) })),
-  }));
-  const projects = seed.projects.map((p) => ({ ...p, id: SAMPLE_PREFIX + p.id, directorId: p.directorId && id(p.directorId), siteManagerId: p.siteManagerId && id(p.siteManagerId), memberIds: (p.memberIds ?? []).map(id) }));
+  const { users, projects, tasks } = buildOwnerSample(ownerUid, today);
   await inChunks(users, (u) => setDoc(doc(db, "users", u.id), clean(u)));
   await inChunks(projects, (p) => setDoc(doc(db, "projects", p.id), clean(p)));
   await inChunks(tasks, (t) => setDoc(doc(db, "tasks", t.id), clean(t)));

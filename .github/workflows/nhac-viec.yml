@@ -12,10 +12,10 @@ on:
   workflow_dispatch:
     inputs:
       kind:
-        description: "daily = nhắc việc sáng, afternoon = nhắc 16:00, weekly = báo cáo tuần, inbox = chỉ đọc tin nhắn gửi bot"
+        description: "daily = nhắc việc sáng, afternoon = nhắc 16:00, weekly = báo cáo tuần, inbox = chỉ đọc tin nhắn gửi bot, seed = nạp lại dữ liệu mẫu"
         default: daily
         type: choice
-        options: [daily, afternoon, weekly, inbox, webhook]
+        options: [daily, afternoon, weekly, inbox, webhook, seed]
       update:
         description: "Máy chủ nhận tin (Cloudflare) tự điền: nội dung 1 tin Zalo cần xử lý ngay"
         default: ""

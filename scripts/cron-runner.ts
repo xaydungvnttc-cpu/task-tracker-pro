@@ -14,6 +14,7 @@ import { formatDate } from "../src/lib/dates";
 import { taskCode } from "../src/lib/tasks";
 import { visibleProjects, visibleTasks } from "../src/lib/projects";
 import { aiAnswer } from "../src/lib/server/ai-assistant";
+import { SAMPLE_PREFIX, buildOwnerSample } from "../src/lib/seed";
 import type { NotificationConfig, Project, Task, User } from "../src/lib/types";
 
 // Cách 1 (mặc định): GitHub đăng nhập Google không cần khóa (Workload Identity), chỉ cần mã dự án.
@@ -257,8 +258,42 @@ async function setWebhook(url: string) {
   if (!r.ok) process.exitCode = 1;
 }
 
+/**
+ * Nạp lại dữ liệu mẫu bằng quyền máy chủ (không cần ai bấm trong app): xóa bản mẫu cũ "mau-…" rồi ghi bộ mẫu mới.
+ * Việc, dự án, người thật không bị đụng tới. In số liệu trước và sau để đối chiếu.
+ */
+async function reseed() {
+  const { db } = getAdmin()!;
+  const ownerUid = (await db.doc("meta/owner").get()).data()?.uid as string | undefined;
+  if (!ownerUid) throw new Error("Chưa có Owner (chưa ai đăng nhập app)");
+  const count = async () => {
+    const out: Record<string, string> = {};
+    for (const c of ["users", "projects", "tasks"]) {
+      const ids = (await db.collection(c).select().get()).docs.map((d) => d.id);
+      out[c] = `${ids.length} (mẫu ${ids.filter((x) => x.startsWith(SAMPLE_PREFIX)).length})`;
+    }
+    return JSON.stringify(out);
+  };
+  console.log("Trước khi nạp:", await count());
+  const { users, projects, tasks } = buildOwnerSample(ownerUid, serverToday());
+  const fresh = new Set([...users, ...projects, ...tasks].map((x) => x.id));
+  const writer = db.bulkWriter();
+  for (const c of ["users", "projects", "tasks"])
+    for (const d of (await db.collection(c).select().get()).docs) if (d.id.startsWith(SAMPLE_PREFIX) && !fresh.has(d.id)) writer.delete(d.ref);
+  const clean = <T,>(o: T): T => JSON.parse(JSON.stringify(o));
+  for (const u of users) writer.set(db.doc(`users/${u.id}`), clean(u));
+  for (const p of projects) writer.set(db.doc(`projects/${p.id}`), clean(p));
+  for (const t of tasks) writer.set(db.doc(`tasks/${t.id}`), clean(t));
+  await writer.close();
+  console.log("Sau khi nạp:", await count());
+}
+
 const kind = process.argv[2];
-if (!["daily", "weekly", "afternoon", "inbox", "webhook"].includes(kind)) throw new Error("Dùng: daily | weekly | afternoon | inbox | webhook");
+if (!["daily", "weekly", "afternoon", "inbox", "webhook", "seed"].includes(kind)) throw new Error("Dùng: daily | weekly | afternoon | inbox | webhook | seed");
+if (kind === "seed") {
+  await reseed();
+  process.exit();
+}
 if (kind === "webhook") {
   await setWebhook((process.env.WEBHOOK_URL ?? "").trim());
   process.exit();

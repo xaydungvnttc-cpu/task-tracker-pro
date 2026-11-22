@@ -390,3 +390,28 @@ function withEvidence(t: Task): Task {
   if (SITE_DEPTS.includes(t.department)) outputLinks.push({ label: "Ảnh hiện trường (album)", url: "https://photos.google.com/" });
   return { ...t, inputLinks, outputLinks };
 }
+
+/** Tiền tố mã của dữ liệu mẫu trên Firestore: xóa mẫu chỉ đụng các bản ghi này, không đụng việc thật */
+export const SAMPLE_PREFIX = "mau-";
+
+/**
+ * Bộ mẫu gắn vào hệ thống thật: người đứng đầu (u1) là Owner đang dùng, các nhân sự còn lại là hồ sơ mẫu "mau-…".
+ * Dùng chung cho nút "Nạp dữ liệu mẫu" trong app và lệnh nạp tự động trên GitHub.
+ */
+export function buildOwnerSample(ownerUid: string, today: string) {
+  const seed = buildSeed(today);
+  const id = (u: string) => (u === "u1" ? ownerUid : SAMPLE_PREFIX + u);
+  return {
+    users: seed.users.filter((u) => u.id !== "u1").map((u) => ({ ...u, id: id(u.id), email: "" })),
+    projects: seed.projects.map((p) => ({ ...p, id: SAMPLE_PREFIX + p.id, directorId: p.directorId && id(p.directorId), siteManagerId: p.siteManagerId && id(p.siteManagerId), memberIds: (p.memberIds ?? []).map(id) })),
+    tasks: seed.tasks.map((t) => ({
+      ...t,
+      id: SAMPLE_PREFIX + t.id,
+      assigneeId: t.assigneeId && id(t.assigneeId),
+      watcherIds: t.watcherIds.map(id),
+      createdBy: id(t.createdBy),
+      projectId: t.projectId ? SAMPLE_PREFIX + t.projectId : null,
+      comments: t.comments.map((c) => ({ ...c, userId: id(c.userId) })),
+    })),
+  };
+}
