@@ -100,6 +100,11 @@ async function processInbox() {
     console.log(`Gắn ảnh Zalo vào việc ${task.id}`);
   };
 
+  if (process.env.LISTEN_SECONDS && process.env.LISTEN_SECONDS !== "0") {
+    const me = (await zaloBot(token, "getMe", {}).catch(() => ({}))) as { result?: { account_name?: string; display_name?: string } };
+    const wh = (await zaloBot(token, "getWebhookInfo", {}).catch(() => ({}))) as { result?: { url?: string } };
+    console.log(`Bot: ${me.result?.display_name ?? me.result?.account_name ?? "?"}; webhook: ${wh.result?.url ? "ĐANG BẬT (getUpdates sẽ không nhận tin)" : "không"}`);
+  }
   // Chạy tay có thể "nghe" lâu hơn (biến LISTEN_SECONDS) để thử bot: nhắn lúc nào trong khoảng đó cũng được trả lời ngay
   const until = Date.now() + Number(process.env.LISTEN_SECONDS || 0) * 1000;
   for (let i = 0; i < 500; i++) {
