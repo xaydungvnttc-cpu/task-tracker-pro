@@ -14,7 +14,7 @@ import type { Project, Task, User } from "../types";
  * Lưu ý: gói miễn phí giới hạn số lần gọi mỗi ngày và Google có thể dùng dữ liệu gửi lên để cải thiện AI,
  * nên không gửi tên nhân viên: mỗi người chỉ ghi chức danh (anh chủ chọn ngày 22/11/2026).
  */
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-3.8-flash";
 const API = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const SYSTEM = `Bạn là trợ lý của Tổng Giám đốc một công ty xây dựng Việt Nam.
