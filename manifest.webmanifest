@@ -1,11 +1,11 @@
 {
-  "name": "Task Tracker Pro",
-  "short_name": "Task Tracker",
+  "name": "TTC Điều Hành",
+  "short_name": "TTC Điều Hành",
   "start_url": "./#today",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f7fb",
-  "theme_color": "#2554e8",
+  "theme_color": "#0f2a44",
   "lang": "vi",
   "icons": [
     {
