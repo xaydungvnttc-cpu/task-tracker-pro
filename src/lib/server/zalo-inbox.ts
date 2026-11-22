@@ -19,12 +19,20 @@ const PREFIX = /^\s*(việc|viec|gấp|gap|khẩn|khan|#viec|#việc|giao việc
 const norm = (s: string) => s.toLowerCase().normalize("NFC");
 const has = (text: string, words: string[]) => words.some((w) => new RegExp(`(^|[^\\p{L}])${w}($|[^\\p{L}])`, "u").test(text));
 
+/** Tin dạng câu hỏi: có dấu "?" hoặc từ để hỏi như gì, nào, bao nhiêu, sao, chưa, không, ai, đâu, khi nào */
+export function isQuestion(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  return /\?\s*$/.test(t) || /(^|\s)(gì|nào|bao nhiêu|bao giờ|sao|thế nào|ra sao|ai|đâu|chưa|không)(\s|$|[.!,])/u.test(t.slice(-40)) || /^(hỏi|cho (tôi|anh|em) (biết|xem)|tình hình|báo cáo nhanh)/u.test(t);
+}
+
 export function classify(text: string): { create: boolean; urgent: boolean } {
   const t = norm(text);
   const urgent = has(t, URGENT);
   if (PREFIX.test(text)) return { create: true, urgent };
   // Tin quá ngắn (chào, ok, cảm ơn) bỏ qua; tin có từ khóa công việc thì tạo việc
   if (t.replace(/\s+/g, " ").trim().length < 12) return { create: false, urgent: false };
+  // Câu hỏi (ví dụ "Phố Nối đang trễ những việc gì?") để trợ lý AI trả lời, không tạo việc
+  if (isQuestion(text)) return { create: false, urgent: false };
   return { create: urgent || has(t, IMPORTANT), urgent };
 }
 
