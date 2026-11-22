@@ -122,6 +122,7 @@ export interface NotificationConfig {
   };
   webhooks: { id: string; type: WebhookType; url: string; enabled: boolean }[];
   events: { taskAssigned: boolean; mention: boolean; statusChange: boolean; dailyDigest: boolean; weeklyReport: boolean; afternoonCheck: boolean };
+  ai: { geminiKey: string }; // Trợ lý AI nhận định buổi sáng (Gemini miễn phí)
 }
 
 export type ChannelKey = "zalo" | "telegram" | "email" | "webhooks";

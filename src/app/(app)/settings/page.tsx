@@ -208,6 +208,9 @@ export default function SettingsPage() {
                   <div>• Trễ từ {RULES.escalateManager} ngày: báo quản lý phòng ban. Trễ từ {RULES.escalateOwner} ngày: báo Ban Tổng Giám đốc.</div>
                   <div>• Việc quá {RULES.unassignedDays} ngày chưa có người nhận, hoặc đang làm mà {RULES.staleDays} ngày không cập nhật: đưa vào mục &quot;Cần chú ý&quot; ở trang Hôm nay và bản nhắc Zalo.</div>
                 </div>
+                <Field label="Mã Gemini cho Trợ lý AI (không bắt buộc)" hint="Lấy miễn phí ở aistudio.google.com/apikey. Có mã thì 8:00 sáng AI gửi kèm 5-10 việc nên chỉ đạo. Chỉ gửi chức danh, không gửi tên nhân viên">
+                  <Input type="password" value={cfg.ai.geminiKey} onChange={(e) => set("ai", { geminiKey: e.target.value.trim() })} placeholder="AIza..." />
+                </Field>
                 <p className="flex items-start gap-1.5 text-xs text-ink-soft">
                   <Bell size={13} className="mt-0.5 shrink-0" /> Chuông thông báo trong app luôn bật cho mọi người.
                 </p>

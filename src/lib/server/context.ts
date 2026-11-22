@@ -45,6 +45,7 @@ function envConfig(): NotificationConfig {
     ["discord", "DISCORD_WEBHOOK_URL"],
     ["custom", "CUSTOM_WEBHOOK_URL"],
   ] as const;
+  c.ai = { geminiKey: env("GEMINI_API_KEY") };
   c.webhooks = hooks.filter(([, k]) => env(k)).map(([type, k]) => ({ id: `env-${type}`, type, url: env(k), enabled: true }));
   return c;
 }
@@ -58,6 +59,7 @@ function merge(base: NotificationConfig, ui: NotificationConfig | null): Notific
     email: ui.email.enabled ? ui.email : base.email,
     webhooks: [...base.webhooks, ...ui.webhooks],
     events: ui.events,
+    ai: ui.ai.geminiKey ? ui.ai : base.ai,
   };
 }
 

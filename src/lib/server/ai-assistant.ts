@@ -8,7 +8,7 @@ import { daysLeft, isOverdue } from "../tasks";
 import type { Project, Task, User } from "../types";
 
 /**
- * Trợ lý AI cho Ban TGĐ, dùng Gemini miễn phí của Google (chỉ chạy khi có biến GEMINI_API_KEY).
+ * Trợ lý AI cho Ban TGĐ, dùng Gemini miễn phí của Google (chỉ chạy khi có mã Gemini ở Cài đặt hoặc secret GEMINI_API_KEY).
  * Mỗi sáng đọc số liệu dự án, việc trễ, cảnh báo sớm rồi viết nhận định ngắn: việc gì cần chỉ đạo hôm nay, ai phụ trách.
  * Ví dụ đầu ra: "1. Phố Nối: lắp dựng thép chậm 10 ngày, yêu cầu anh Khánh trình kế hoạch bù tiến độ trước 17h…"
  * Lưu ý: gói miễn phí giới hạn số lần gọi mỗi ngày và Google có thể dùng dữ liệu gửi lên để cải thiện AI,
@@ -49,8 +49,8 @@ export function brief(tasks: Task[], users: User[], projects: Project[], today: 
   return lines.join("\n");
 }
 
-export async function aiMorningBrief(tasks: Task[], users: User[], projects: Project[], today: string): Promise<string | null> {
-  const key = process.env.GEMINI_API_KEY;
+/** key: mã Gemini dán ở Cài đặt (ưu tiên) hoặc secret GEMINI_API_KEY trên GitHub */
+export async function aiMorningBrief(tasks: Task[], users: User[], projects: Project[], today: string, key: string): Promise<string | null> {
   if (!key) return null;
   const res = await fetch(API, {
     method: "POST",

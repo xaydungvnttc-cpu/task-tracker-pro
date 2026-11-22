@@ -39,7 +39,7 @@ export async function runJob(kind: "daily" | "weekly" | "afternoon", clientConfi
 
   // Trợ lý AI (khi có khóa): nhận định buổi sáng gửi kèm qua các kênh và lưu để xem trong trang Điều hành công ty
   if (kind === "daily" && enabled) {
-    const ai = await aiMorningBrief(tasks, users, projects, today).catch((e) => (console.error("Trợ lý AI lỗi:", e), null));
+    const ai = await aiMorningBrief(tasks, users, projects, today, config.ai.geminiKey).catch((e) => (console.error("Trợ lý AI lỗi:", e), null));
     if (ai) {
       results.push(...(await sendAll(config, { title: "🤖 Trợ lý AI: việc nên chỉ đạo hôm nay", sections: [{ lines: ai.split("\n").filter(Boolean) }] })));
       await saveAiReport(ai);

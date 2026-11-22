@@ -7,6 +7,7 @@ export function defaultConfig(): NotificationConfig {
     email: { enabled: false, provider: "resend", from: "", to: "", resendApiKey: "", smtpHost: "", smtpPort: "587", smtpUser: "", smtpPass: "" },
     webhooks: [],
     events: { taskAssigned: true, mention: true, statusChange: true, dailyDigest: true, weeklyReport: true, afternoonCheck: true },
+    ai: { geminiKey: "" },
   };
 }
 
@@ -20,5 +21,6 @@ export function withDefaults(c: Partial<NotificationConfig> | null | undefined):
     email: { ...d.email, ...c.email },
     webhooks: c.webhooks ?? [],
     events: { ...d.events, ...c.events },
+    ai: { ...d.ai, ...c.ai },
   };
 }
