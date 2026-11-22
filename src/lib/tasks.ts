@@ -227,3 +227,13 @@ export function computeStats(all: Task[], users: User[], from: string, to: strin
 export function findMentions(text: string, users: User[]): User[] {
   return users.filter((u) => text.includes("@" + u.name));
 }
+
+/**
+ * Mã ngắn 5 ký tự của một việc, để nhắn Zalo gắn ảnh vào đúng việc.
+ * Ví dụ: gửi ảnh cho bot kèm chú thích "#K7Q2M" → ảnh thành link kết quả của việc có mã K7Q2M.
+ */
+export function taskCode(id: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return ((h >>> 0) % 60466176).toString(36).toUpperCase().padStart(5, "0");
+}

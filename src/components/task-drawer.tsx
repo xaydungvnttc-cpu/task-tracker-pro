@@ -10,7 +10,7 @@ import { Avatar, Button, ConfirmButton, Drawer, Field, Input, ProgressBar, Segme
 import { DEPARTMENTS, OFFICE, OFFICE_LABEL, FREQ_LABEL, STATUS_LABEL, STATUS_ORDER, TIME_TYPE_LABEL, WEEKDAY_SHORT } from "@/lib/constants";
 import { addDays, formatDateTime, weekday } from "@/lib/dates";
 import { can } from "@/lib/rbac";
-import { newId, nextOccurrence, progressOf } from "@/lib/tasks";
+import { newId, nextOccurrence, progressOf, taskCode } from "@/lib/tasks";
 import type { LinkItem, RecurrenceFreq, Task, TimeType } from "@/lib/types";
 
 function blankTask(createdBy: string, department: string, today: string, preset?: Partial<Task>): Task {
@@ -342,6 +342,11 @@ export function TaskDrawer() {
           <LinkEditor label="Kết quả bàn giao" links={draft.outputLinks} editable={progressEdit} onChange={(l) => set({ outputLinks: l })} />
         </div>
         {outputMissing && draft.status !== "done" && <p className="-mt-2 text-xs text-amber-700 dark:text-amber-400">Muốn bấm Hoàn thành phải có ít nhất 1 link kết quả: biên bản, ảnh hiện trường, file hồ sơ…</p>}
+        {!isNew && draft.status !== "done" && (
+          <p className="-mt-2 text-xs text-ink-soft">
+            Chụp ảnh hiện trường gửi bot Zalo kèm chú thích <b className="font-mono text-ink">#{taskCode(draft.id)}</b> để ảnh tự thành link kết quả của việc này.
+          </p>
+        )}
 
         {/* Bình luận và @nhắc tên */}
         {!isNew && (

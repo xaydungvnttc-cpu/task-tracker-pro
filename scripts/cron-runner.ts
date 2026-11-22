@@ -11,6 +11,7 @@ import { serverToday } from "../src/lib/server/context";
 import { ZALO_BOT_API, splitIds } from "../src/lib/server/notification-service";
 import { classify, taskFromZalo } from "../src/lib/server/zalo-inbox";
 import { formatDate } from "../src/lib/dates";
+import { taskCode } from "../src/lib/tasks";
 import type { NotificationConfig, Project, Task, User } from "../src/lib/types";
 
 const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -30,7 +31,10 @@ async function zaloBot(token: string, method: string, body: unknown) {
   return (await res.json().catch(() => ({}))) as { ok?: boolean; result?: unknown };
 }
 
-type ZaloUpdate = { message?: { message_id?: string; text?: string; chat?: { id?: string }; from?: { display_name?: string } } };
+type ZaloUpdate = {
+  event_name?: string;
+  message?: { message_id?: string; text?: string; photo?: string; photo_url?: string; caption?: string; chat?: { id?: string }; from?: { display_name?: string; name?: string } };
+};
 
 const LINK = /^\s*LK\s+([A-Za-z0-9]{6})\s*$/i;
 
@@ -59,6 +63,35 @@ async function processInbox() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
   const send = (chat_id: string, text: string) => zaloBot(token, "sendMessage", { chat_id, text });
 
+  /**
+   * Ví dụ: chỉ huy trưởng chụp ảnh sàn tầng 6 đã đổ bê tông, gửi bot kèm chú thích "#K7Q2M"
+   * → ảnh thành link kết quả của việc K7Q2M. Không ghi mã mà chỉ có 1 việc đang làm thì gắn vào việc đó.
+   */
+  const attachPhoto = async (chatId: string, url: string, caption: string, linked: User | undefined) => {
+    if (!linked) {
+      await send(chatId, 'Bot chưa biết anh/chị là ai nên chưa gắn được ảnh. Mở app, vào Cài đặt > Hồ sơ của tôi lấy mã rồi nhắn bot, ví dụ "LK AB12CD".');
+      return;
+    }
+    const open = (await db.collection("tasks").where("status", "!=", "done").get()).docs.map((d) => ({ ...(d.data() as Task), id: d.id }));
+    const code = caption.match(/#([0-9A-Z]{5})\b/i)?.[1]?.toUpperCase();
+    const mine = open.filter((t) => t.assigneeId === linked.id);
+    const task = code ? open.find((t) => taskCode(t.id) === code) : mine.length === 1 ? mine[0] : undefined;
+    if (!task) {
+      const list = mine.slice(0, 6).map((t) => `#${taskCode(t.id)} ${t.title}`).join("\n");
+      await send(chatId, `${code ? `Không thấy việc mã ${code}. ` : ""}Gửi lại ảnh kèm chú thích là mã việc, ví dụ "#${mine[0] ? taskCode(mine[0].id) : "K7Q2M"}".${list ? `\nViệc của anh/chị:\n${list}` : ""}`);
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const note = caption.replace(/#[0-9A-Z]{5}\b/i, "").trim();
+    const label = `Ảnh Zalo ${formatDate(today)} · ${linked.name}${note ? ` · ${note}` : ""}`;
+    await db.doc(`tasks/${task.id}`).set({ outputLinks: [...(task.outputLinks ?? []), { label, url }], updatedAt: nowIso }, { merge: true });
+    const notify = Array.from(new Set([task.assigneeId, ...(task.watcherIds ?? [])].filter((x): x is string => !!x && x !== linked.id)));
+    for (const userId of notify)
+      await db.collection("notifications").add({ userId, title: "Ảnh hiện trường mới", body: `${linked.name}: ${task.title}`, taskId: task.id, read: false, createdAt: nowIso });
+    await send(chatId, `Đã gắn ảnh vào việc: ${task.title}. Mở app bấm Hoàn thành khi đủ hồ sơ. ${appUrl}/tasks`);
+    console.log(`Gắn ảnh Zalo vào việc ${task.id}`);
+  };
+
   for (let i = 0; i < 50; i++) {
     const r = await zaloBot(token, "getUpdates", { timeout: 1 }).catch(() => ({ ok: false }) as { ok?: boolean; result?: unknown });
     const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
@@ -67,7 +100,7 @@ async function processInbox() {
       const m = u.message;
       const chatId = m?.chat?.id;
       if (!chatId) continue;
-      const sender = m?.from?.display_name ?? "anh/chị";
+      const sender = m?.from?.display_name ?? m?.from?.name ?? "anh/chị";
       const text = (m?.text ?? "").trim();
       const all = await loadUsers();
       const linked = all.find((x) => x.zaloChatId === chatId);
@@ -84,7 +117,14 @@ async function processInbox() {
         user.zaloChatId = chatId;
         const boss = user.role === "owner" || user.department === "Ban Tổng Giám đốc";
         if (boss && !companyIds.includes(chatId)) companyIds.push(chatId);
-        await send(chatId, `Đã liên kết Zalo với tài khoản ${user.name}. Bot nhắc riêng việc của anh/chị lúc 8:00 sáng${boss ? ", kèm bản tổng hợp toàn công ty" : ""}. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
+        await send(chatId, `Đã liên kết Zalo với tài khoản ${user.name}. Bot nhắc riêng việc của anh/chị lúc 8:00 sáng${boss ? ", kèm bản tổng hợp toàn công ty" : ""}. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:". Ảnh hiện trường gửi kèm mã việc (ví dụ #K7Q2M, xem trong app) sẽ thành link kết quả.`);
+        continue;
+      }
+
+      // Ảnh hiện trường → link kết quả của việc
+      const photo = m?.photo ?? m?.photo_url;
+      if (photo) {
+        await attachPhoto(chatId, photo, (m?.caption ?? text).trim(), linked);
         continue;
       }
 
