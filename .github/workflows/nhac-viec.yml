@@ -15,12 +15,20 @@ on:
         description: "daily = nhắc việc sáng, afternoon = nhắc 16:00, weekly = báo cáo tuần, inbox = chỉ đọc tin nhắn gửi bot"
         default: daily
         type: choice
-        options: [daily, afternoon, weekly, inbox]
+        options: [daily, afternoon, weekly, inbox, webhook]
+      update:
+        description: "Máy chủ nhận tin (Cloudflare) tự điền: nội dung 1 tin Zalo cần xử lý ngay"
+        default: ""
+      url:
+        description: "Chỉ với kind = webhook: địa chỉ máy chủ nhận tin Cloudflare (để trống = tắt, quay lại đọc tin theo lịch)"
+        default: ""
       listen:
         description: "Chỉ khi thử bot: số giây ngồi chờ tin nhắn (ví dụ 300)"
         default: "0"
 
-concurrency: nhac-viec
+# Lịch chạy nối đuôi nhau; mỗi tin Zalo từ máy chủ nhận tin chạy riêng, không bị huỷ khi nhiều tin tới cùng lúc
+concurrency:
+  group: ${{ inputs.update != '' && format('zalo-{0}', github.run_id) || 'nhac-viec' }}
 
 # Cho phép GitHub xin "vé" đăng nhập Google không cần khóa (Workload Identity Federation)
 permissions:
@@ -61,3 +69,5 @@ jobs:
           NEXT_PUBLIC_APP_URL: "https://xaydungvnttc-cpu.github.io/task-tracker-pro/#"
           APP_TIMEZONE: Asia/Ho_Chi_Minh
           LISTEN_SECONDS: ${{ inputs.listen || '0' }}
+          ZALO_UPDATE: ${{ inputs.update }}
+          WEBHOOK_URL: ${{ inputs.url }}

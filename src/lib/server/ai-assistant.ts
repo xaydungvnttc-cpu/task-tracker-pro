@@ -4,7 +4,7 @@ import { formatDate } from "../dates";
 import { companyRisks } from "../early-warning";
 import { projectHealth } from "../projects";
 import { watchList } from "../reminders";
-import { daysLeft, isOverdue } from "../tasks";
+import { daysLeft, isDueWithin, isOverdue } from "../tasks";
 import type { Project, Task, User } from "../types";
 
 /**
@@ -25,7 +25,7 @@ Yêu cầu:
 - Người phụ trách gọi theo chức danh có trong số liệu. Chỉ dùng thông tin có trong số liệu, không bịa con số.
 - Không dùng markdown, không tiêu đề, không lời chào.`;
 
-export function brief(tasks: Task[], users: User[], projects: Project[], today: string): string {
+export function brief(tasks: Task[], users: User[], projects: Project[], today: string, detail = false): string {
   // Giấu tên người: chỉ gửi chức danh, ví dụ "Chỉ huy trưởng Nhà xưởng Phố Nối" thay cho "Lý Thanh Tâm"
   const label = (u: User) => u.title || `${ROLE_LABEL[u.role]} ${u.department}`;
   const name = (id: string | null) => {
@@ -44,25 +44,50 @@ export function brief(tasks: Task[], users: User[], projects: Project[], today: 
   const overdue = tasks.filter((t) => isOverdue(t, today)).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!)).slice(0, 40);
   lines.push("", "VIỆC QUÁ HẠN (cũ nhất trước):");
   for (const t of overdue) lines.push(`- [${code(t.projectId)}] ${scrub(t.title)} · ${name(t.assigneeId)} · trễ ${-daysLeft(t, today)!} ngày${t.directive ? " · chỉ đạo TGĐ" : ""}${t.important ? " · quan trọng" : ""}`);
+  if (detail) {
+    lines.push("", "VIỆC ĐẾN HẠN TRONG 7 NGÀY:");
+    for (const t of tasks.filter((x) => isDueWithin(x, today, 7)).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!)).slice(0, 40))
+      lines.push(`- [${code(t.projectId)}] ${scrub(t.title)} · ${name(t.assigneeId)} · hạn ${formatDate(t.dueDate!, true)}`);
+  }
   const w = watchList(tasks, today);
   lines.push("", `Việc chưa có người nhận: ${w.unassigned.length}. Việc đang làm mà 7 ngày chưa cập nhật: ${w.stale.length}.`);
   return lines.join("\n");
 }
 
-/** key: mã Gemini dán ở Cài đặt (ưu tiên) hoặc secret GEMINI_API_KEY trên GitHub */
-export async function aiMorningBrief(tasks: Task[], users: User[], projects: Project[], today: string, key: string): Promise<string | null> {
+async function gemini(system: string, text: string, key: string): Promise<string | null> {
   if (!key) return null;
   const res = await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: brief(tasks, users, projects, today) }] }],
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text }] }],
     }),
     signal: AbortSignal.timeout(60_000),
   });
   if (!res.ok) throw new Error(`Gemini HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-  const text = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
-  return text || null;
+  const answer = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
+  return answer || null;
+}
+
+/** key: mã Gemini dán ở Cài đặt (ưu tiên) hoặc secret GEMINI_API_KEY trên GitHub */
+export function aiMorningBrief(tasks: Task[], users: User[], projects: Project[], today: string, key: string): Promise<string | null> {
+  return gemini(SYSTEM, brief(tasks, users, projects, today), key);
+}
+
+const ASK = `Bạn là trợ lý điều hành của một công ty xây dựng Việt Nam, trả lời tin nhắn Zalo của cán bộ công ty.
+Chỉ dựa vào số liệu được cung cấp. Không có thông tin thì nói rõ là app chưa có, không bịa.
+Trả lời tiếng Việt, ngắn gọn (tối đa 12 dòng), giọng công việc, không markdown, không lời chào dài.
+Người được nhắc tới gọi theo chức danh có trong số liệu.
+Nếu người hỏi muốn giao việc, nhắc họ nhắn bắt đầu bằng "Việc:" hoặc "Gấp:" để bot tạo việc.`;
+
+/**
+ * Trả lời câu hỏi gửi bot Zalo, ví dụ "Phố Nối đang trễ gì?" → liệt kê việc trễ của dự án PN kèm chức danh phụ trách.
+ * tasks/projects đã lọc theo quyền xem của người hỏi (người ở dự án nào chỉ thấy dự án đó). Không gửi tên nhân viên.
+ */
+export function aiAnswer(question: string, asker: User, tasks: Task[], users: User[], projects: Project[], today: string, key: string): Promise<string | null> {
+  const label = (u: User) => u.title || `${ROLE_LABEL[u.role]} ${u.department}`;
+  const q = users.reduce((t, u) => (u.name ? t.split(u.name).join(label(u)) : t), question);
+  return gemini(ASK, `${brief(tasks, users, projects, today, true)}\n\nNGƯỜI HỎI: ${label(asker)}\nCÂU HỎI: ${q}`, key);
 }

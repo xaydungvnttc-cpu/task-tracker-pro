@@ -12,6 +12,8 @@ import { ZALO_BOT_API, splitIds } from "../src/lib/server/notification-service";
 import { classify, taskFromZalo } from "../src/lib/server/zalo-inbox";
 import { formatDate } from "../src/lib/dates";
 import { taskCode } from "../src/lib/tasks";
+import { visibleProjects, visibleTasks } from "../src/lib/projects";
+import { aiAnswer } from "../src/lib/server/ai-assistant";
 import type { NotificationConfig, Project, Task, User } from "../src/lib/types";
 
 // Cách 1 (mặc định): GitHub đăng nhập Google không cần khóa (Workload Identity), chỉ cần mã dự án.
@@ -104,6 +106,83 @@ async function processInbox() {
     console.log(`Gắn ảnh Zalo vào việc ${task.id}`);
   };
 
+  const handle = async (u: ZaloUpdate) => {
+    const m = u.message;
+    const chatId = m?.chat?.id;
+    if (!chatId) return;
+    const sender = m?.from?.display_name ?? m?.from?.name ?? "anh/chị";
+    const text = (m?.text ?? "").trim();
+    const all = await loadUsers();
+    const linked = all.find((x) => x.zaloChatId === chatId);
+
+    // Liên kết tài khoản
+    const lk = text.match(LINK);
+    if (lk) {
+      const user = all.find((x) => x.id.slice(0, 6).toUpperCase() === lk[1].toUpperCase());
+      if (!user) {
+        await send(chatId, "Mã liên kết không đúng. Mở app, vào Cài đặt > Hồ sơ của tôi để xem mã.");
+        return;
+      }
+      await db.doc(`users/${user.id}`).set({ zaloChatId: chatId }, { merge: true });
+      user.zaloChatId = chatId;
+      const boss = user.role === "owner" || user.department === "Ban Tổng Giám đốc";
+      if (boss && !companyIds.includes(chatId)) {
+        companyIds.push(chatId);
+        await saveIds(); // lưu ngay, không đợi hết lượt (lượt có thể bị dừng giữa chừng)
+      }
+      await send(chatId, `Đã liên kết Zalo với tài khoản ${user.name}. Bot nhắc riêng việc của anh/chị lúc 8:00 sáng${boss ? ", kèm bản tổng hợp toàn công ty" : ""}. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:". Ảnh hiện trường gửi kèm mã việc (ví dụ #K7Q2M, xem trong app) sẽ thành link kết quả.`);
+      return;
+    }
+
+    // Ảnh hiện trường → link kết quả của việc
+    const photo = m?.photo ?? m?.photo_url;
+    if (photo) {
+      await attachPhoto(chatId, photo, (m?.caption ?? text).trim(), linked);
+      return;
+    }
+
+    // Người đầu tiên nhắn bot (thường là người cài đặt) nhận bản tổng hợp công ty
+    const first = companyIds.length === 0;
+    if (first) companyIds.push(chatId);
+    const known = !!linked || companyIds.includes(chatId);
+
+    const c = text ? classify(text) : { create: false, urgent: false };
+    if (c.create && m?.message_id) {
+      projects ??= (await db.collection("projects").get()).docs.map((d) => ({ ...(d.data() as Project), id: d.id }));
+      const nowIso = new Date().toISOString();
+      const task = taskFromZalo({ messageId: m.message_id, text, sender: linked?.name ?? sender, urgent: c.urgent, projects, ownerId: linked?.id ?? ownerId, today, nowIso });
+      await db.doc(`tasks/${task.id}`).set(task);
+      if (ownerId)
+        await db.collection("notifications").add({ userId: ownerId, title: c.urgent ? "Việc khẩn từ Zalo" : "Việc mới từ Zalo", body: `${linked?.name ?? sender}: ${task.title}`, taskId: task.id, read: false, createdAt: nowIso });
+      const p = projects.find((x) => x.id === task.projectId);
+      await send(chatId, `Đã tạo việc: ${task.title}${p ? ` (dự án ${p.name})` : ""}, hạn ${formatDate(task.dueDate)}${c.urgent ? ", mức Khẩn cấp" : ""}. Xem tại ${appUrl}/tasks`);
+      console.log(`Tạo việc từ Zalo: ${task.id}`);
+    } else if (first) {
+      await send(chatId, `Đã đăng ký nhận bản tổng hợp toàn công ty cho ${sender}: 8:00 sáng, 16:00 việc hạn hôm nay chưa xong, 20:00 Chủ nhật báo cáo tuần. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
+    } else if (!known) {
+      await send(chatId, `Chào ${sender}. Để nhận nhắc việc riêng, mở app TTC Điều Hành, vào Cài đặt > Hồ sơ của tôi, lấy mã rồi nhắn cho bot, ví dụ "LK AB12CD". Muốn báo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
+    } else if (text && linked && cfg.ai.geminiKey) {
+      // Hỏi đáp AI, chỉ trên dữ liệu người hỏi được xem. Ví dụ "Phố Nối đang trễ gì?"
+      const allTasks = (await db.collection("tasks").get()).docs.map((d) => ({ ...(d.data() as Task), id: d.id }));
+      projects ??= (await db.collection("projects").get()).docs.map((d) => ({ ...(d.data() as Project), id: d.id }));
+      const vp = visibleProjects(projects, linked);
+      const answer = await aiAnswer(text, linked, visibleTasks(allTasks, projects, linked), all, vp, today, cfg.ai.geminiKey).catch((e) => {
+        console.log("Lỗi trợ lý AI:", String(e).slice(0, 200));
+        return null;
+      });
+      await send(chatId, answer ?? `Trợ lý AI đang bận, anh/chị hỏi lại sau ít phút. Muốn tạo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
+      console.log("Trợ lý AI đã trả lời 1 câu hỏi");
+    } else if (text) {
+      await send(chatId, `Tin này chưa thành việc. Muốn tạo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
+    }
+  };
+
+  // Có máy chủ nhận tin (Cloudflare) thì GitHub nhận đúng tin đó qua biến ZALO_UPDATE, xử lý ngay, không cần chờ lịch
+  if (process.env.ZALO_UPDATE) {
+    await handle(JSON.parse(process.env.ZALO_UPDATE) as ZaloUpdate);
+    console.log("Đã xử lý 1 tin Zalo từ máy chủ nhận tin");
+  }
+
   if (process.env.LISTEN_SECONDS && process.env.LISTEN_SECONDS !== "0") {
     const me = (await zaloBot(token, "getMe", {}).catch(() => ({}))) as { result?: { account_name?: string; display_name?: string } };
     const wh = (await zaloBot(token, "getWebhookInfo", {}).catch(() => ({}))) as { result?: { url?: string } };
@@ -111,7 +190,7 @@ async function processInbox() {
   }
   // Chạy tay có thể "nghe" lâu hơn (biến LISTEN_SECONDS) để thử bot: nhắn lúc nào trong khoảng đó cũng được trả lời ngay
   const until = Date.now() + Number(process.env.LISTEN_SECONDS || 0) * 1000;
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < (process.env.ZALO_UPDATE ? 0 : 500); i++) {
     const r = await zaloBot(token, "getUpdates", { timeout: "20" }, 40_000).catch((e) => ({ ok: false, description: String(e) }) as { ok?: boolean; result?: unknown });
     const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
     // Zalo trả 408 "Request timeout" khi không có tin mới, đó không phải lỗi
@@ -122,65 +201,7 @@ async function processInbox() {
       if (Date.now() < until) continue;
       break;
     }
-    for (const u of list) {
-      const m = u.message;
-      const chatId = m?.chat?.id;
-      if (!chatId) continue;
-      const sender = m?.from?.display_name ?? m?.from?.name ?? "anh/chị";
-      const text = (m?.text ?? "").trim();
-      const all = await loadUsers();
-      const linked = all.find((x) => x.zaloChatId === chatId);
-
-      // Liên kết tài khoản
-      const lk = text.match(LINK);
-      if (lk) {
-        const user = all.find((x) => x.id.slice(0, 6).toUpperCase() === lk[1].toUpperCase());
-        if (!user) {
-          await send(chatId, "Mã liên kết không đúng. Mở app, vào Cài đặt > Hồ sơ của tôi để xem mã.");
-          continue;
-        }
-        await db.doc(`users/${user.id}`).set({ zaloChatId: chatId }, { merge: true });
-        user.zaloChatId = chatId;
-        const boss = user.role === "owner" || user.department === "Ban Tổng Giám đốc";
-        if (boss && !companyIds.includes(chatId)) {
-          companyIds.push(chatId);
-          await saveIds(); // lưu ngay, không đợi hết lượt (lượt có thể bị dừng giữa chừng)
-        }
-        await send(chatId, `Đã liên kết Zalo với tài khoản ${user.name}. Bot nhắc riêng việc của anh/chị lúc 8:00 sáng${boss ? ", kèm bản tổng hợp toàn công ty" : ""}. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:". Ảnh hiện trường gửi kèm mã việc (ví dụ #K7Q2M, xem trong app) sẽ thành link kết quả.`);
-        continue;
-      }
-
-      // Ảnh hiện trường → link kết quả của việc
-      const photo = m?.photo ?? m?.photo_url;
-      if (photo) {
-        await attachPhoto(chatId, photo, (m?.caption ?? text).trim(), linked);
-        continue;
-      }
-
-      // Người đầu tiên nhắn bot (thường là người cài đặt) nhận bản tổng hợp công ty
-      const first = companyIds.length === 0;
-      if (first) companyIds.push(chatId);
-      const known = !!linked || companyIds.includes(chatId);
-
-      const c = text ? classify(text) : { create: false, urgent: false };
-      if (c.create && m?.message_id) {
-        projects ??= (await db.collection("projects").get()).docs.map((d) => ({ ...(d.data() as Project), id: d.id }));
-        const nowIso = new Date().toISOString();
-        const task = taskFromZalo({ messageId: m.message_id, text, sender: linked?.name ?? sender, urgent: c.urgent, projects, ownerId: linked?.id ?? ownerId, today, nowIso });
-        await db.doc(`tasks/${task.id}`).set(task);
-        if (ownerId)
-          await db.collection("notifications").add({ userId: ownerId, title: c.urgent ? "Việc khẩn từ Zalo" : "Việc mới từ Zalo", body: `${linked?.name ?? sender}: ${task.title}`, taskId: task.id, read: false, createdAt: nowIso });
-        const p = projects.find((x) => x.id === task.projectId);
-        await send(chatId, `Đã tạo việc: ${task.title}${p ? ` (dự án ${p.name})` : ""}, hạn ${formatDate(task.dueDate)}${c.urgent ? ", mức Khẩn cấp" : ""}. Xem tại ${appUrl}/tasks`);
-        console.log(`Tạo việc từ Zalo: ${task.id}`);
-      } else if (first) {
-        await send(chatId, `Đã đăng ký nhận bản tổng hợp toàn công ty cho ${sender}: 8:00 sáng, 16:00 việc hạn hôm nay chưa xong, 20:00 Chủ nhật báo cáo tuần. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
-      } else if (!known) {
-        await send(chatId, `Chào ${sender}. Để nhận nhắc việc riêng, mở app TTC Điều Hành, vào Cài đặt > Hồ sơ của tôi, lấy mã rồi nhắn cho bot, ví dụ "LK AB12CD". Muốn báo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
-      } else if (text) {
-        await send(chatId, `Tin này chưa thành việc. Muốn tạo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
-      }
-    }
+    for (const u of list) await handle(u);
   }
   // Ban TGĐ đã liên kết Zalo luôn có tên trong danh sách nhận bản tổng hợp công ty
   for (const u of await loadUsers())
@@ -220,13 +241,33 @@ async function remindAppointments() {
   }
 }
 
+/**
+ * Bật/tắt máy chủ nhận tin: Zalo đẩy từng tin tới Cloudflare ngay khi có, Cloudflare chuyển sang GitHub xử lý (khoảng 1 phút).
+ * Mã bí mật gắn kèm mỗi tin = HMAC(Bot Token, "ttc-webhook"): Cloudflare tự tính lại từ Bot Token để chặn tin giả.
+ */
+async function setWebhook(url: string) {
+  const { db } = getAdmin()!;
+  const cfg: NotificationConfig = withDefaults(((await db.doc("settings/integrations").get()).data() as NotificationConfig) ?? null);
+  const token = cfg.zalo.botToken;
+  if (!token) throw new Error("Chưa có Bot Token Zalo ở Cài đặt");
+  const { createHmac } = await import("node:crypto");
+  const secret = createHmac("sha256", token).update("ttc-webhook").digest("hex");
+  const r = url ? await zaloBot(token, "setWebhook", { url, secret_token: secret }) : await zaloBot(token, "deleteWebhook", {});
+  console.log(`${url ? "Bật" : "Tắt"} máy chủ nhận tin:`, JSON.stringify(r).slice(0, 300));
+  if (!r.ok) process.exitCode = 1;
+}
+
 const kind = process.argv[2];
-if (kind !== "daily" && kind !== "weekly" && kind !== "afternoon" && kind !== "inbox") throw new Error("Dùng: daily | weekly | afternoon | inbox");
+if (!["daily", "weekly", "afternoon", "inbox", "webhook"].includes(kind)) throw new Error("Dùng: daily | weekly | afternoon | inbox | webhook");
+if (kind === "webhook") {
+  await setWebhook((process.env.WEBHOOK_URL ?? "").trim());
+  process.exit();
+}
 
 await processInbox();
 if (kind === "inbox") await remindAppointments();
 if (kind !== "inbox") {
-  const r = await runJob(kind);
+  const r = await runJob(kind as "daily" | "weekly" | "afternoon");
   console.log(JSON.stringify({ ...r, preview: undefined }, null, 2));
   console.log(r.preview);
   const failed = r.results.filter((x) => !x.ok);
