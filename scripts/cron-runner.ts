@@ -63,6 +63,10 @@ async function processInbox() {
   }
   const companyIds = splitIds(cfg.zalo.botChatIds);
   const before = companyIds.join(",");
+  const saveIds = async () => {
+    await ref.set({ zalo: { ...cfg.zalo, botChatIds: companyIds.join(", ") } }, { merge: true });
+    console.log("Cập nhật người nhận bản tổng hợp Zalo");
+  };
   let projects: Project[] | null = null;
   let users: User[] | null = null;
   const loadUsers = async () => (users ??= (await db.collection("users").get()).docs.map((d) => ({ ...(d.data() as User), id: d.id })));
@@ -138,7 +142,10 @@ async function processInbox() {
         await db.doc(`users/${user.id}`).set({ zaloChatId: chatId }, { merge: true });
         user.zaloChatId = chatId;
         const boss = user.role === "owner" || user.department === "Ban Tổng Giám đốc";
-        if (boss && !companyIds.includes(chatId)) companyIds.push(chatId);
+        if (boss && !companyIds.includes(chatId)) {
+          companyIds.push(chatId);
+          await saveIds(); // lưu ngay, không đợi hết lượt (lượt có thể bị dừng giữa chừng)
+        }
         await send(chatId, `Đã liên kết Zalo với tài khoản ${user.name}. Bot nhắc riêng việc của anh/chị lúc 8:00 sáng${boss ? ", kèm bản tổng hợp toàn công ty" : ""}. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:". Ảnh hiện trường gửi kèm mã việc (ví dụ #K7Q2M, xem trong app) sẽ thành link kết quả.`);
         continue;
       }
@@ -175,10 +182,10 @@ async function processInbox() {
       }
     }
   }
-  if (companyIds.join(",") !== before) {
-    await ref.set({ zalo: { ...cfg.zalo, botChatIds: companyIds.join(", ") } }, { merge: true });
-    console.log("Cập nhật người nhận bản tổng hợp Zalo");
-  }
+  // Ban TGĐ đã liên kết Zalo luôn có tên trong danh sách nhận bản tổng hợp công ty
+  for (const u of await loadUsers())
+    if (u.zaloChatId && (u.role === "owner" || u.department === "Ban Tổng Giám đốc") && !companyIds.includes(u.zaloChatId)) companyIds.push(u.zaloChatId);
+  if (companyIds.join(",") !== before) await saveIds();
 }
 
 /**
