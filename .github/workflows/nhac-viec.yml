@@ -19,6 +19,11 @@ on:
 
 concurrency: nhac-viec
 
+# Cho phép GitHub xin "vé" đăng nhập Google không cần khóa (Workload Identity Federation)
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -30,6 +35,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
+      # Đăng nhập Google bằng danh tính của repo này, không lưu khóa nào trên GitHub.
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/940197014298/locations/global/workloadIdentityPools/github/providers/github
+          service_account: nhac-viec@task-tracker-pro-809d9.iam.gserviceaccount.com
       - name: Chọn việc cần chạy
         id: pick
         run: |
@@ -43,6 +53,7 @@ jobs:
       - run: node --conditions=react-server .cron/cron-runner.mjs ${{ steps.pick.outputs.kind }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_ADMIN_PROJECT_ID: task-tracker-pro-809d9
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # không bắt buộc: có thì bật Trợ lý AI (Gemini miễn phí)
           NEXT_PUBLIC_APP_URL: "https://xaydungvnttc-cpu.github.io/task-tracker-pro/#"
           APP_TIMEZONE: Asia/Ho_Chi_Minh

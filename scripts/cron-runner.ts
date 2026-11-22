@@ -14,12 +14,17 @@ import { formatDate } from "../src/lib/dates";
 import { taskCode } from "../src/lib/tasks";
 import type { NotificationConfig, Project, Task, User } from "../src/lib/types";
 
+// Cách 1 (mặc định): GitHub đăng nhập Google không cần khóa (Workload Identity), chỉ cần mã dự án.
+// Cách 2: dán nội dung file khóa .json vào secret FIREBASE_SERVICE_ACCOUNT.
 const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
-if (!sa) throw new Error("Thiếu secret FIREBASE_SERVICE_ACCOUNT");
-const key = JSON.parse(sa) as { project_id: string; client_email: string; private_key: string };
-process.env.FIREBASE_ADMIN_PROJECT_ID = key.project_id;
-process.env.FIREBASE_ADMIN_CLIENT_EMAIL = key.client_email;
-process.env.FIREBASE_ADMIN_PRIVATE_KEY = key.private_key;
+if (sa) {
+  const key = JSON.parse(sa) as { project_id: string; client_email: string; private_key: string };
+  process.env.FIREBASE_ADMIN_PROJECT_ID = key.project_id;
+  process.env.FIREBASE_ADMIN_CLIENT_EMAIL = key.client_email;
+  process.env.FIREBASE_ADMIN_PRIVATE_KEY = key.private_key;
+} else if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  throw new Error("Chưa đăng nhập Google: cần bước Workload Identity hoặc secret FIREBASE_SERVICE_ACCOUNT");
+}
 
 async function zaloBot(token: string, method: string, body: unknown) {
   const res = await fetch(`${ZALO_BOT_API}${token}/${method}`, {
