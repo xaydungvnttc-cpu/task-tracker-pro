@@ -101,9 +101,11 @@ async function processInbox() {
   };
 
   for (let i = 0; i < 50; i++) {
-    const r = await zaloBot(token, "getUpdates", { timeout: 1 }).catch(() => ({ ok: false }) as { ok?: boolean; result?: unknown });
+    const r = await zaloBot(token, "getUpdates", { timeout: 5 }).catch(() => ({ ok: false }) as { ok?: boolean; result?: unknown });
     const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
-    if (i === 0) console.log(`Đọc tin Zalo: getUpdates ${r.ok ? "ok" : "lỗi " + JSON.stringify(r).slice(0, 200)}, ${list.length} tin`);
+    // Zalo trả 408 "Request timeout" khi không có tin mới, đó không phải lỗi
+    const empty = (r as { error_code?: number }).error_code === 408;
+    if (i === 0) console.log(`Đọc tin Zalo: ${r.ok ? `${list.length} tin mới` : empty ? "không có tin mới" : "lỗi " + JSON.stringify(r).slice(0, 200)}`);
     if (!r.ok || !list.length) break;
     for (const u of list) {
       const m = u.message;
