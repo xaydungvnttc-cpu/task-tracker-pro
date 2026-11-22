@@ -26,12 +26,12 @@ if (sa) {
   throw new Error("Chưa đăng nhập Google: cần bước Workload Identity hoặc secret FIREBASE_SERVICE_ACCOUNT");
 }
 
-async function zaloBot(token: string, method: string, body: unknown) {
+async function zaloBot(token: string, method: string, body: unknown, waitMs = 15_000) {
   const res = await fetch(`${ZALO_BOT_API}${token}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(waitMs),
   });
   return (await res.json().catch(() => ({}))) as { ok?: boolean; result?: unknown };
 }
@@ -108,11 +108,12 @@ async function processInbox() {
   // Chạy tay có thể "nghe" lâu hơn (biến LISTEN_SECONDS) để thử bot: nhắn lúc nào trong khoảng đó cũng được trả lời ngay
   const until = Date.now() + Number(process.env.LISTEN_SECONDS || 0) * 1000;
   for (let i = 0; i < 500; i++) {
-    const r = await zaloBot(token, "getUpdates", { timeout: 5 }).catch(() => ({ ok: false }) as { ok?: boolean; result?: unknown });
+    const r = await zaloBot(token, "getUpdates", { timeout: "20" }, 40_000).catch((e) => ({ ok: false, description: String(e) }) as { ok?: boolean; result?: unknown });
     const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
     // Zalo trả 408 "Request timeout" khi không có tin mới, đó không phải lỗi
     const empty = (r as { error_code?: number }).error_code === 408;
-    if (i === 0) console.log(`Đọc tin Zalo: ${r.ok ? `${list.length} tin mới` : empty ? "không có tin mới" : "lỗi " + JSON.stringify(r).slice(0, 200)}`);
+    // Không bao giờ huỷ ngang một lần chờ tin: Zalo có thể đã giao tin cho kết nối bị huỷ và tin đó mất luôn
+    if (i === 0 || list.length || (!r.ok && !empty)) console.log(`Đọc tin Zalo: ${r.ok ? `${list.length} tin mới` : empty ? "không có tin mới" : "lỗi " + JSON.stringify(r).slice(0, 200)}`);
     if (!r.ok || !list.length) {
       if (Date.now() < until) continue;
       break;
