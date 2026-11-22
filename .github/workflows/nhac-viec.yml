@@ -43,6 +43,6 @@ jobs:
       - run: node --conditions=react-server .cron/cron-runner.mjs ${{ steps.pick.outputs.kind }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }} # không bắt buộc: có thì bật Trợ lý AI
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # không bắt buộc: có thì bật Trợ lý AI (Gemini miễn phí)
           NEXT_PUBLIC_APP_URL: "https://xaydungvnttc-cpu.github.io/task-tracker-pro/#"
           APP_TIMEZONE: Asia/Ho_Chi_Minh

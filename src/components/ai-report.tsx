@@ -9,7 +9,7 @@ import { formatDateTime } from "@/lib/dates";
 
 /**
  * Nhận định của trợ lý AI mỗi sáng: đọc toàn bộ việc, dự án, rồi viết 5-10 dòng việc Ban TGĐ cần làm hôm nay.
- * Chỉ hiện khi đã bật (có khóa ANTHROPIC_API_KEY trong GitHub); chỉ Owner xem.
+ * Chỉ hiện khi đã bật (có khóa GEMINI_API_KEY trong GitHub); chỉ Owner xem.
  */
 export function AiReport() {
   const { me, mode } = useApp();
