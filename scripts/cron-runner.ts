@@ -57,7 +57,10 @@ async function processInbox() {
   const snap = await ref.get();
   const cfg: NotificationConfig = withDefaults(snap.exists ? (snap.data() as NotificationConfig) : null);
   const token = cfg.zalo.botToken;
-  if (cfg.zalo.mode !== "bot" || !token) return;
+  if (cfg.zalo.mode !== "bot" || !token) {
+    console.log(`Đọc tin Zalo: bỏ qua (kiểu Zalo = ${cfg.zalo.mode}, ${token ? "có" : "chưa có"} Bot Token)`);
+    return;
+  }
   const companyIds = splitIds(cfg.zalo.botChatIds);
   const before = companyIds.join(",");
   let projects: Project[] | null = null;
@@ -100,6 +103,7 @@ async function processInbox() {
   for (let i = 0; i < 50; i++) {
     const r = await zaloBot(token, "getUpdates", { timeout: 1 }).catch(() => ({ ok: false }) as { ok?: boolean; result?: unknown });
     const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
+    if (i === 0) console.log(`Đọc tin Zalo: getUpdates ${r.ok ? "ok" : "lỗi " + JSON.stringify(r).slice(0, 200)}, ${list.length} tin`);
     if (!r.ok || !list.length) break;
     for (const u of list) {
       const m = u.message;
