@@ -100,13 +100,18 @@ async function processInbox() {
     console.log(`Gắn ảnh Zalo vào việc ${task.id}`);
   };
 
-  for (let i = 0; i < 50; i++) {
+  // Chạy tay có thể "nghe" lâu hơn (biến LISTEN_SECONDS) để thử bot: nhắn lúc nào trong khoảng đó cũng được trả lời ngay
+  const until = Date.now() + Number(process.env.LISTEN_SECONDS || 0) * 1000;
+  for (let i = 0; i < 500; i++) {
     const r = await zaloBot(token, "getUpdates", { timeout: 5 }).catch(() => ({ ok: false }) as { ok?: boolean; result?: unknown });
     const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
     // Zalo trả 408 "Request timeout" khi không có tin mới, đó không phải lỗi
     const empty = (r as { error_code?: number }).error_code === 408;
     if (i === 0) console.log(`Đọc tin Zalo: ${r.ok ? `${list.length} tin mới` : empty ? "không có tin mới" : "lỗi " + JSON.stringify(r).slice(0, 200)}`);
-    if (!r.ok || !list.length) break;
+    if (!r.ok || !list.length) {
+      if (Date.now() < until) continue;
+      break;
+    }
     for (const u of list) {
       const m = u.message;
       const chatId = m?.chat?.id;

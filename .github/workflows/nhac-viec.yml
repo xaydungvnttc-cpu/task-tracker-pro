@@ -16,6 +16,9 @@ on:
         default: daily
         type: choice
         options: [daily, afternoon, weekly, inbox]
+      listen:
+        description: "Chỉ khi thử bot: số giây ngồi chờ tin nhắn (ví dụ 300)"
+        default: "0"
 
 concurrency: nhac-viec
 
@@ -57,3 +60,4 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # không bắt buộc: có thì bật Trợ lý AI (Gemini miễn phí)
           NEXT_PUBLIC_APP_URL: "https://xaydungvnttc-cpu.github.io/task-tracker-pro/#"
           APP_TIMEZONE: Asia/Ho_Chi_Minh
+          LISTEN_SECONDS: ${{ inputs.listen || '0' }}
