@@ -14,7 +14,8 @@ import { HEALTH_LABEL, projectHealth, type Health } from "@/lib/projects";
 import { RISK_LABEL, companyRisks } from "@/lib/early-warning";
 import { AiReport } from "@/components/ai-report";
 import { can } from "@/lib/rbac";
-import { isOverdue } from "@/lib/tasks";
+import { isOverdue, newId } from "@/lib/tasks";
+import { LOAD_LABEL, workloadPlan, type Move } from "@/lib/workload";
 
 const LIGHT: Record<Health, string> = { green: "bg-emerald-500", yellow: "bg-amber-400", red: "bg-red-600" };
 const LIGHT_TEXT: Record<Health, string> = {
@@ -96,6 +97,7 @@ export default function PortfolioPage() {
       </div>
 
       <EarlyWarning />
+      <Workload />
       <AiReport />
 
       <Card className="mt-5">
@@ -288,6 +290,110 @@ function Tile({ icon: Icon, label, value, tone, note }: { icon: typeof Flag; lab
       <div className="mt-2 text-3xl font-bold">{value}</div>
       {note && <div className="text-[11px] opacity-80">{note}</div>}
     </div>
+  );
+}
+
+/**
+ * Cân đối tải việc: thanh tải từng người và đề xuất chuyển bớt việc chưa bắt đầu sang người cùng phòng, cùng dự án.
+ * Bấm "Giao lại" là đổi người thực hiện, kèm một bình luận ghi lý do để hai bên cùng biết.
+ */
+function Workload() {
+  const { tasks, users, projects, today, me, saveTask, openTask, projectById } = useApp();
+  const { rows, moves, gaps, avg } = useMemo(() => workloadPlan(tasks, users, projects, today), [tasks, users, projects, today]);
+  const [busy, setBusy] = useState(false);
+  const max = Math.max(1, ...rows.map((r) => r.open));
+  const canMove = can.assignOthers(me!);
+  const apply = (m: Move) =>
+    saveTask({
+      ...m.task,
+      assigneeId: m.to.id,
+      comments: [...m.task.comments, { id: newId(), userId: me!.id, text: `Chuyển từ ${m.from.name} sang ${m.to.name} để cân đối tải việc: ${m.reason}.`, createdAt: new Date().toISOString() }],
+    });
+  const applyAll = async () => {
+    setBusy(true);
+    for (const m of moves) await apply(m);
+    setBusy(false);
+  };
+  return (
+    <Card className="mt-5">
+      <CardTitle
+        action={
+          canMove && moves.length > 1 ? (
+            <Button size="sm" variant="primary" disabled={busy} onClick={applyAll}>
+              Giao lại cả {moves.length} việc
+            </Button>
+          ) : undefined
+        }
+      >
+        Cân đối tải việc
+      </CardTitle>
+      <div className="grid gap-5 p-4 lg:grid-cols-2">
+        <div>
+          <div className="mb-2 text-xs text-ink-soft">Việc đang mở mỗi người (bình quân {avg.toFixed(1)}). Phần đỏ là việc quá hạn.</div>
+          <div className="space-y-1.5">
+            {rows.map((r) => (
+              <div key={r.user.id} className="flex items-center gap-2 text-sm">
+                <span className="w-36 shrink-0 truncate" title={r.user.title}>
+                  {r.user.name}
+                </span>
+                <div className="flex h-3 flex-1 overflow-hidden rounded bg-muted">
+                  <div className="bg-red-500" style={{ width: `${(r.overdue / max) * 100}%` }} />
+                  <div className={r.level === "over" ? "bg-amber-500" : r.level === "free" ? "bg-emerald-500" : "bg-brand-600"} style={{ width: `${((r.open - r.overdue) / max) * 100}%` }} />
+                </div>
+                <span className="w-6 text-right text-xs font-semibold">{r.open}</span>
+                <span
+                  className={clsx(
+                    "w-20 shrink-0 rounded-full px-2 py-0.5 text-center text-[11px] font-semibold",
+                    r.level === "over" ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" : r.level === "free" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-muted text-ink-soft",
+                  )}
+                >
+                  {LOAD_LABEL[r.level]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="mb-2 text-xs text-ink-soft">Đề xuất giao lại việc chưa bắt đầu (không đụng chỉ đạo và việc đã quá hạn)</div>
+          {moves.length === 0 ? (
+            <div className="flex items-center gap-2 rounded-lg bg-muted p-3 text-sm text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 size={16} /> Tải việc đang cân đối, chưa cần chuyển.
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {moves.map((m) => (
+                <div key={m.task.id} className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2">
+                  <button className="min-w-0 flex-1 text-left" onClick={() => openTask(m.task.id)}>
+                    <div className="text-sm font-medium">{m.task.title}</div>
+                    <div className="text-xs text-ink-soft">
+                      {projectById(m.task.projectId)?.code ?? OFFICE_LABEL} · {m.from.name} → <b className="text-ink">{m.to.name}</b>
+                      {m.task.dueDate ? ` · hạn ${formatDate(m.task.dueDate)}` : ""}
+                    </div>
+                  </button>
+                  {canMove && (
+                    <Button size="sm" disabled={busy} onClick={() => apply(m)}>
+                      Giao lại
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {gaps.length > 0 && (
+            <>
+              <div className="mb-2 mt-4 text-xs text-ink-soft">Cần Ban TGĐ quyết: quá tải nhưng trong phòng không còn ai đỡ được</div>
+              <div className="space-y-1.5">
+                {gaps.map((g) => (
+                  <div key={g.user.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                    <b>{g.user.name}</b> ({g.user.department}) đang có {g.open} việc mở{g.overdue ? `, ${g.overdue} quá hạn` : ""}. Đề xuất bổ sung người cho phòng, hoặc giãn hạn các việc chưa gấp.
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }
 
