@@ -136,7 +136,7 @@ Gói Hobby của Vercel cho chạy cron tối đa 1 lần/ngày mỗi job, đủ
 - **Phân quyền xem theo dự án** (`src/lib/projects.ts`): mỗi người chỉ thấy dự án có tên mình (GĐDA, CHT, thành viên dự án ở trang Dự án); Owner và Ban Tổng Giám đốc thấy tất cả. Lưu ý: đây là lọc hiển thị trong app.
 - **Cảnh báo sớm** (`src/lib/early-warning.ts`): dự án có mốc chậm, mốc sắp tới mà tồn việc trễ, khối lượng 2 tuần tới vượt năng lực 2 tuần qua → đề xuất phương án theo nhóm vấn đề (vật tư, hồ sơ thanh toán, chất lượng, an toàn, nhân lực), bấm "Giao việc" để giao ngay.
 - **Zalo Bot**: người đầu tiên nhắn bot nhận bản tổng hợp công ty. Người khác vào Cài đặt > Hồ sơ của tôi lấy mã, nhắn "LK <mã>" cho bot để nhận nhắc việc riêng. Tin bắt đầu "Việc:" hoặc "Gấp:" (hoặc có từ khóa công việc) tự thành việc trong app.
-- **Trợ lý AI** (`src/lib/server/ai-assistant.ts`, không bắt buộc): lấy khóa Gemini miễn phí ở aistudio.google.com, thêm secret `GEMINI_API_KEY` vào GitHub (Settings > Secrets and variables > Actions) thì mỗi sáng có nhận định "việc nên chỉ đạo hôm nay" gửi Zalo và hiện ở trang Điều hành công ty. Không gửi tên nhân viên cho Google, chỉ gửi chức danh.
+- **Trợ lý AI** (`src/lib/server/ai-assistant.ts`, không bắt buộc): lấy khóa Gemini miễn phí ở aistudio.google.com, dán vào ô "Mã Gemini" ở Cài đặt tích hợp (hoặc secret `GEMINI_API_KEY` trên GitHub) thì mỗi sáng có nhận định "việc nên chỉ đạo hôm nay" gửi Zalo và hiện ở trang Điều hành công ty. Không gửi tên nhân viên cho Google, chỉ gửi chức danh.
 
 ## Cấu trúc mã
 
