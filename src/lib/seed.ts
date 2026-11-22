@@ -1,4 +1,5 @@
 import { addDays, addMonths, startOfWeek } from "./dates";
+import { buildHistory } from "./seed-history";
 import type { AppNotification, Project, Task, User } from "./types";
 
 export const SEED_USERS: User[] = [
@@ -31,18 +32,18 @@ export function buildSeed(today: string): { users: User[]; projects: Project[]; 
   const projects: Project[] = [
     {
       id: "p1", code: "SH", name: "Chung cư Sông Hồng Residence", client: "Công ty CP Đầu tư Sông Hồng", directorId: "u2", siteManagerId: "u4", memberIds: ["u3", "u5", "u6", "u7", "u8", "u9", "u10"],
-      startDate: d(-210), endDate: d(240), status: "active", color: "#2563eb",
-      milestones: [ms("m1", "Xong phần móng", -150, -152), ms("m2", "Xong phần thô tầng 1-4", -30, -27), ms("m3", "Xong phần thô tầng 5", -3, null), ms("m4", "Cất nóc khối A", 60, null), ms("m5", "Bàn giao", 240, null)],
+      startDate: d(-321), endDate: d(240), status: "active", color: "#2563eb",
+      milestones: [ms("m0", "Xong cọc thử, thí nghiệm nén tĩnh", -280, -282), ms("m01", "Xong cọc đại trà", -220, -221), ms("m1", "Xong phần móng, tầng hầm", -150, -152), ms("m2", "Xong phần thô tầng 1-4", -30, -27), ms("m3", "Xong phần thô tầng 5", -3, null), ms("m4", "Cất nóc khối A", 60, null), ms("m5", "Bàn giao", 240, null)],
     },
     {
       id: "p2", code: "PN", name: "Nhà xưởng KCN Phố Nối B", client: "Công ty TNHH Cơ khí Hưng Yên", directorId: "u11", siteManagerId: "u12", memberIds: ["u3", "u5", "u6", "u7", "u9", "u14", "u15"],
-      startDate: d(-75), endDate: d(80), status: "active", color: "#dc2626",
-      milestones: [ms("m1", "Xong móng cột", -40, -38), ms("m2", "Lắp dựng xong kết cấu thép", -10, null), ms("m3", "Lợp mái, bao che", 25, null), ms("m4", "Bàn giao", 80, null)],
+      startDate: d(-290), endDate: d(80), status: "active", color: "#dc2626",
+      milestones: [ms("m0", "San nền, bàn giao mặt bằng", -250, -251), ms("m1", "Xong móng cột, nền xưởng", -120, -117), ms("m15", "Gia công xong kết cấu thép tại xưởng", -60, -55), ms("m2", "Lắp dựng xong kết cấu thép", -10, null), ms("m3", "Lợp mái, bao che", 25, null), ms("m4", "Bàn giao", 80, null)],
     },
     {
       id: "p3", code: "NT", name: "Trường THCS Ngọc Thụy", client: "Ban QLDA quận Long Biên", directorId: "u11", siteManagerId: "u13", memberIds: ["u3", "u5", "u6", "u7", "u9", "u16", "u17"],
-      startDate: d(-32), endDate: d(330), status: "active", color: "#059669",
-      milestones: [ms("m1", "Xong cọc khoan nhồi", 6, null), ms("m2", "Xong móng, giằng móng", 45, null), ms("m3", "Cất nóc", 200, null), ms("m4", "Bàn giao trước năm học mới", 330, null)],
+      startDate: d(-260), endDate: d(330), status: "active", color: "#059669",
+      milestones: [ms("m0", "Xin phép xây dựng, rào chắn công trường", -220, -222), ms("m01", "Giải phóng mặt bằng khu nhà học", -120, -121), ms("m02", "Xong cọc thử, thí nghiệm nén tĩnh", -40, -41), ms("m1", "Xong cọc khoan nhồi", 6, null), ms("m2", "Xong móng, giằng móng", 45, null), ms("m3", "Cất nóc", 200, null), ms("m4", "Bàn giao trước năm học mới", 330, null)],
     },
   ];
   const at = (n: number, h = 16) => `${d(n)}T${String(h).padStart(2, "0")}:00:00.000Z`;
@@ -337,6 +338,8 @@ export function buildSeed(today: string): { users: User[]; projects: Project[]; 
       }),
     );
   });
+
+  tasks.push(...buildHistory(today, base));
 
   const notifications: AppNotification[] = [
     { id: "n1", userId: "u1", title: "Việc quá hạn", body: "Lập hồ sơ thanh toán đợt 3 gửi Chủ đầu tư đã quá hạn 1 ngày", taskId: "t2", read: false, createdAt: at(0, 1) },

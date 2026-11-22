@@ -10,7 +10,7 @@ import { endOfMonth, endOfQuarter, addDays, startOfMonth, startOfQuarter, startO
 import { can } from "@/lib/rbac";
 import { computeStats } from "@/lib/tasks";
 
-type Period = "week" | "month" | "quarter" | "custom";
+type Period = "week" | "month" | "quarter" | "year" | "custom";
 
 export default function DashboardPage() {
   const { scoped, users, today, me } = useApp();
@@ -24,7 +24,9 @@ export default function DashboardPage() {
         ? [startOfMonth(today), endOfMonth(today)]
         : period === "quarter"
           ? [startOfQuarter(today), endOfQuarter(today)]
-          : [custom.from, custom.to];
+          : period === "year"
+            ? [today.slice(0, 4) + "-01-01", today.slice(0, 4) + "-12-31"]
+            : [custom.from, custom.to];
 
   const s = useMemo(() => computeStats(scoped, users, from, to, today), [scoped, users, from, to, today]);
   const maxForecast = Math.max(1, ...s.forecast.map((f) => f.count));
@@ -44,6 +46,7 @@ export default function DashboardPage() {
                 { value: "week", label: "Tuần này" },
                 { value: "month", label: "Tháng này" },
                 { value: "quarter", label: "Quý này" },
+                { value: "year", label: "Năm nay" },
                 { value: "custom", label: "Tùy chỉnh" },
               ]}
             />

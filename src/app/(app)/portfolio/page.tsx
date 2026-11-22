@@ -23,7 +23,7 @@ const LIGHT_TEXT: Record<Health, string> = {
   red: "text-red-700 dark:text-red-400",
 };
 
-type Period = "month" | "last" | "quarter";
+type Period = "month" | "last" | "quarter" | "year";
 type GroupBy = "user" | "department" | "project";
 
 /** Màn hình của Chủ tịch, TGĐ: cả công ty trên một trang, dự án nào đỏ thì bấm vào xem ngay */
@@ -50,7 +50,9 @@ export default function PortfolioPage() {
       ? [startOfMonth(today), endOfMonth(today)]
       : period === "last"
         ? [addMonths(startOfMonth(today), -1), endOfMonth(addMonths(startOfMonth(today), -1))]
-        : [startOfQuarter(today), endOfQuarter(today)];
+        : period === "quarter"
+          ? [startOfQuarter(today), endOfQuarter(today)]
+          : [today.slice(0, 4) + "-01-01", today.slice(0, 4) + "-12-31"];
 
   const kpi: KpiRow[] = useMemo(() => {
     if (groupBy === "user") return groupKpi(tasks, users.map((u) => ({ key: u.id, label: u.name, sub: u.title || u.department })), (t) => t.assigneeId, from, to, today);
@@ -207,7 +209,7 @@ export default function PortfolioPage() {
           </CardTitle>
           <div className="flex flex-wrap gap-2 border-b border-line p-3">
             <Segmented value={groupBy} onChange={setGroupBy} options={[{ value: "user", label: "Theo người" }, { value: "department", label: "Theo phòng ban" }, { value: "project", label: "Theo dự án" }]} />
-            <Segmented value={period} onChange={setPeriod} options={[{ value: "month", label: "Tháng này" }, { value: "last", label: "Tháng trước" }, { value: "quarter", label: "Quý này" }]} />
+            <Segmented value={period} onChange={setPeriod} options={[{ value: "month", label: "Tháng này" }, { value: "last", label: "Tháng trước" }, { value: "quarter", label: "Quý này" }, { value: "year", label: "Năm nay" }]} />
           </div>
           <div className="overflow-x-auto thin-scroll">
             <table className="w-full min-w-[560px] text-sm">
