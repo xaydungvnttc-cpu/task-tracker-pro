@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   if (user !== "demo" && user?.role !== "owner") return NextResponse.json({ error: "Chỉ Quản trị được gửi thử" }, { status: 403 });
   const { channel, config } = (await req.json()) as { channel: ChannelKey; config: NotificationConfig };
   const results = await sendAll(withDefaults(config), {
-    title: "🔔 Tin nhắn thử từ Task Tracker Pro",
+    title: "🔔 Tin nhắn thử từ TTC Điều Hành",
     sections: [{ tone: "green", lines: ["Kết nối thành công. Từ giờ kênh này sẽ nhận nhắc việc và báo cáo."] }],
   }, channel);
   return NextResponse.json({ results });

@@ -86,7 +86,8 @@ export function DueBadge({ task, today }: { task: Task; today: string }) {
   if (!task.dueDate) return <span className="text-xs text-ink-soft">Không hạn</span>;
   const d = daysLeft(task, today)!;
   const open = task.status !== "done";
-  const text = !open ? formatDate(task.dueDate) : d < 0 ? `Quá hạn ${-d} ngày` : d === 0 ? "Hạn hôm nay" : d <= 7 ? `Còn ${d} ngày` : formatDate(task.dueDate);
+  const base = !open ? formatDate(task.dueDate) : d < 0 ? `Quá hạn ${-d} ngày` : d === 0 ? "Hạn hôm nay" : d <= 7 ? `Còn ${d} ngày` : formatDate(task.dueDate);
+  const text = task.dueTime && open && d >= 0 ? `${base} · ${task.dueTime}` : base;
   return (
     <span
       className={clsx(

@@ -2,14 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Task Tracker Pro",
-    short_name: "Task Tracker",
+    name: "TTC Điều Hành",
+    short_name: "TTC Điều Hành",
     description: "Giao việc, theo dõi tiến độ và nhắc việc đa kênh",
     start_url: "/today",
     display: "standalone",
     orientation: "any",
     background_color: "#f5f7fb",
-    theme_color: "#2554e8",
+    theme_color: "#0f2a44",
     lang: "vi",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

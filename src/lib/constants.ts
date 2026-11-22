@@ -1,6 +1,6 @@
 import type { RecurrenceFreq, Role, Scope, TaskStatus, TimeType } from "./types";
 
-export const APP_NAME = "Task Tracker Pro";
+export const APP_NAME = "TTC Điều Hành";
 
 /** Bản Demo đóng gói thành trang tĩnh (không có máy chủ API): ẩn các nút cần server */
 export const IS_STATIC_DEMO = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";

@@ -50,12 +50,12 @@ function toEmailHtml(m: OutgoingMessage): string {
     .join("");
   return `<!doctype html><html><body style="margin:0;background:#f5f7fb;font-family:Segoe UI,Arial,sans-serif">
   <div style="max-width:600px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e3e8f0">
-    <div style="background:#2554e8;color:#fff;padding:18px 24px;font-size:18px;font-weight:700">${escHtml(m.title)}</div>
+    <div style="background:#1f4e79;color:#fff;padding:18px 24px;font-size:18px;font-weight:700">${escHtml(m.title)}</div>
     <div style="padding:8px 24px 24px">${sections}
-      ${m.url ? `<p style="margin-top:24px"><a href="${m.url}" style="background:#2554e8;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Mở Task Tracker Pro</a></p>` : ""}
+      ${m.url ? `<p style="margin-top:24px"><a href="${m.url}" style="background:#1f4e79;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Mở TTC Điều Hành</a></p>` : ""}
     </div>
   </div>
-  <p style="text-align:center;color:#94a3b8;font-size:12px">Gửi tự động từ Task Tracker Pro</p>
+  <p style="text-align:center;color:#94a3b8;font-size:12px">Gửi tự động từ TTC Điều Hành</p>
 </body></html>`;
 }
 

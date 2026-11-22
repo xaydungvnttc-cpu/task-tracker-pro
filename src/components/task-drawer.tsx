@@ -1,9 +1,11 @@
 "use client";
 
 import clsx from "clsx";
-import { AtSign, Link2, Plus, Repeat, Send, Trash2 } from "lucide-react";
+import { AtSign, CalendarPlus, Link2, Plus, Repeat, Send, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useApp } from "./app-provider";
+import { PROCESS_TEMPLATES } from "@/lib/templates";
+import { googleCalendarUrl } from "@/lib/ics";
 import { Avatar, Button, ConfirmButton, Drawer, Field, Input, ProgressBar, Segmented, Select, Textarea, Toggle } from "./ui";
 import { DEPARTMENTS, OFFICE, OFFICE_LABEL, FREQ_LABEL, STATUS_LABEL, STATUS_ORDER, TIME_TYPE_LABEL, WEEKDAY_SHORT } from "@/lib/constants";
 import { addDays, formatDateTime, weekday } from "@/lib/dates";
@@ -223,7 +225,17 @@ export function TaskDrawer() {
               <Field label="Hạn chót">
                 <Input type="date" disabled={!fullEdit} value={draft.dueDate ?? ""} min={draft.startDate ?? undefined} onChange={(e) => set({ dueDate: e.target.value || null })} />
               </Field>
+              {draft.timeType === "single" && (
+                <Field label="Giờ hẹn" hint="Zalo nhắc trước 1 giờ">
+                  <Input type="time" disabled={!fullEdit} value={draft.dueTime ?? ""} onChange={(e) => set({ dueTime: e.target.value || null, timeReminded: null })} />
+                </Field>
+              )}
             </div>
+          )}
+          {!isNew && draft.dueDate && (
+            <a href={googleCalendarUrl(draft)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:underline">
+              <CalendarPlus size={14} /> Thêm vào Google Calendar
+            </a>
           )}
           <Field label="Lặp lại (việc định kỳ)">
             <Select value={draft.recurrence?.freq ?? ""} disabled={!fullEdit || draft.timeType === "none"} onChange={(e) => setFreq(e.target.value as RecurrenceFreq | "")}>
@@ -295,9 +307,33 @@ export function TaskDrawer() {
             </div>
           ))}
           {fullEdit && (
-            <Button size="sm" variant="ghost" onClick={() => set({ checklist: [...draft.checklist, { id: newId(), text: "", done: false }] })}>
-              <Plus size={14} /> Thêm bước
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="ghost" onClick={() => set({ checklist: [...draft.checklist, { id: newId(), text: "", done: false }] })}>
+                <Plus size={14} /> Thêm bước
+              </Button>
+              {/* Quy trình mẫu TTC: chèn các bước chuẩn và ghi hồ sơ phải nộp vào mô tả */}
+              <Select
+                className="h-8 w-auto py-0 text-xs"
+                value=""
+                aria-label="Chèn quy trình mẫu TTC"
+                onChange={(e) => {
+                  const tpl = PROCESS_TEMPLATES.find((x) => x.id === e.target.value);
+                  if (!tpl) return;
+                  const need = `Hồ sơ phải nộp khi hoàn thành (${tpl.name}): ${tpl.evidence.join("; ")}.`;
+                  set({
+                    checklist: [...draft.checklist.filter((c) => c.text.trim()), ...tpl.steps.map((text) => ({ id: newId(), text, done: false }))],
+                    description: draft.description.includes(need) ? draft.description : [draft.description.trim(), need].filter(Boolean).join("\n\n"),
+                  });
+                }}
+              >
+                <option value="">Chèn quy trình mẫu TTC…</option>
+                {PROCESS_TEMPLATES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
           )}
         </div>
 

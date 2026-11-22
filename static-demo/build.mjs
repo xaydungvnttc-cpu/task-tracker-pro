@@ -55,7 +55,7 @@ execSync(`npx @tailwindcss/cli -i ${resolve(here, "styles.css")} -o ${resolve(ou
 const css = readFileSync(resolve(out, "app.css"), "utf8");
 const code = js.outputFiles[0].text.replace(/<\/script/gi, "<\\/script");
 
-const html = `<title>Task Tracker Pro</title>
+const html = `<title>TTC Điều Hành</title>
 <meta name="description" content="Giao việc, theo dõi tiến độ dự án xây dựng">
 <style>${css}</style>
 <div id="root" class="min-h-dvh font-sans antialiased"></div>

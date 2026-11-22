@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle2, LayoutDashboard, Loader2, Rocket } from "lucide-react";
+import { Logo } from "@/components/logo";
+import { CheckCircle2, Loader2, Rocket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useApp } from "@/components/app-provider";
@@ -43,16 +44,14 @@ export default function LoginPage() {
 
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-gradient-to-br from-brand-700 to-indigo-900 p-10 text-white lg:flex">
-        <div className="flex items-center gap-2 text-lg font-bold">
-          <LayoutDashboard /> Task Tracker Pro
-        </div>
+      <div className="hidden flex-col justify-between border-r-4 border-safety-500 bg-steel-900 p-10 text-white lg:flex">
+        <Logo light />
         <div className="space-y-5">
-          <h2 className="text-3xl font-bold leading-tight">Giao việc rõ ràng, theo dõi sát sao, nhắc việc tự động.</h2>
+          <h2 className="text-3xl font-bold leading-tight">Điều hành mọi dự án từ một nơi. Việc nào trễ, biết trước khi thành chuyện đã rồi.</h2>
           <ul className="space-y-2 text-white/85">
-            {["Bảng chỉ số, bảng tiến độ, ma trận ưu tiên, lịch theo ngày", "Việc định kỳ tự tạo, chia bước, bàn giao kèm link kết quả", "Nhắc 8:00 sáng và báo cáo tuần qua Zalo, Telegram, Email"].map((t) => (
+            {["Đèn xanh, vàng, đỏ cho từng dự án và mốc hợp đồng", "Cảnh báo sớm kèm phương án xử lý, giao việc một chạm", "Nhắc việc và leo thang qua Zalo, tin nhắn thành việc"].map((t) => (
               <li key={t} className="flex gap-2">
-                <CheckCircle2 size={20} className="shrink-0 text-emerald-300" /> {t}
+                <CheckCircle2 size={20} className="shrink-0 text-safety-400" /> {t}
               </li>
             ))}
           </ul>
@@ -63,8 +62,8 @@ export default function LoginPage() {
       <div className="flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center lg:hidden">
-            <div className="inline-flex items-center gap-2 text-xl font-bold text-brand-600">
-              <LayoutDashboard /> Task Tracker Pro
+            <div className="inline-flex">
+              <Logo />
             </div>
           </div>
 

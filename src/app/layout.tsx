@@ -5,7 +5,7 @@ import { Toasts } from "@/components/toasts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Task Tracker Pro",
+  title: "TTC Điều Hành",
   description: "Giao việc, theo dõi tiến độ và nhắc việc đa kênh cho đội nhóm",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Task Tracker", statusBarStyle: "default" },
@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#2554e8" },
+    { media: "(prefers-color-scheme: light)", color: "#0f2a44" },
     { media: "(prefers-color-scheme: dark)", color: "#0b1120" },
   ],
 };

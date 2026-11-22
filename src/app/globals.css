@@ -50,11 +50,16 @@
   --color-line: var(--line);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
-  --color-brand-50: #eef4ff;
-  --color-brand-100: #dbe6fe;
-  --color-brand-500: #3b6ef5;
-  --color-brand-600: #2554e8;
-  --color-brand-700: #1d43c4;
+  /* Nhận diện TTC Điều Hành: xanh thép (chủ đạo) và cam an toàn (nhấn), như màu áo bảo hộ công trường */
+  --color-brand-50: #eef3f8;
+  --color-brand-100: #d5e1ec;
+  --color-brand-500: #2f6496;
+  --color-brand-600: #1f4e79;
+  --color-brand-700: #173b5c;
+  --color-steel-900: #0f2a44;
+  --color-safety-400: #fb923c;
+  --color-safety-500: #f97316;
+  --color-safety-600: #ea580c;
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 

@@ -79,6 +79,8 @@ export interface Task {
   timeType: TimeType;
   startDate: string | null; // YYYY-MM-DD
   dueDate: string | null; // YYYY-MM-DD
+  dueTime?: string | null; // giờ hẹn "HH:MM", ví dụ 09:00 mời TVGS nghiệm thu
+  timeReminded?: string | null; // đã nhắc trước 1 giờ cho lần hẹn này (ngày + giờ), tránh nhắc trùng
   status: TaskStatus;
   checklist: ChecklistItem[];
   inputLinks: LinkItem[];

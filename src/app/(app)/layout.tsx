@@ -24,6 +24,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useApp } from "@/components/app-provider";
+import { Logo } from "@/components/logo";
 import { TaskDrawer } from "@/components/task-drawer";
 import { Avatar, Button, Select } from "@/components/ui";
 import { auth } from "@/lib/backend";
@@ -70,15 +71,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* Thanh bên: cố định trên máy tính, trượt ra trên điện thoại/iPad dọc */}
       <aside
         className={clsx(
-          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-line bg-surface transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-steel-900 text-slate-200 transition-transform lg:translate-x-0",
           menuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full",
         )}
       >
         <div className="flex h-14 items-center justify-between px-4">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-brand-600">
-            <LayoutDashboard size={20} /> Task Tracker Pro
+          <Link href="/dashboard">
+            <Logo light />
           </Link>
-          <button className="rounded p-1 lg:hidden" onClick={() => setMenuOpen(false)} aria-label="Đóng menu">
+          <button className="rounded p-1 text-slate-300 lg:hidden" onClick={() => setMenuOpen(false)} aria-label="Đóng menu">
             <X size={18} />
           </button>
         </div>
@@ -91,24 +92,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               key={n.href}
               href={n.href}
               className={clsx(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium",
-                pathname.startsWith(n.href) ? "bg-brand-50 text-brand-700 dark:bg-brand-700/20 dark:text-brand-100" : "text-ink-soft hover:bg-muted hover:text-ink",
+                "flex items-center gap-3 rounded-r-lg border-l-[3px] px-3 py-2 text-sm font-medium",
+                pathname.startsWith(n.href) ? "border-safety-500 bg-white/10 text-white" : "border-transparent text-slate-300 hover:bg-white/5 hover:text-white",
               )}
             >
               <n.icon size={18} /> {n.label}
             </Link>
           ))}
         </nav>
-        <div className="border-t border-line p-3">
+        <div className="border-t border-white/10 p-3">
           <div className="flex items-center gap-2">
             <Avatar user={me} size={34} />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold">{me.name}</div>
-              <div className="truncate text-xs text-ink-soft">
+              <div className="truncate text-sm font-semibold text-white">{me.name}</div>
+              <div className="truncate text-xs text-slate-400">
                 {ROLE_LABEL[me.role]} · {me.department}
               </div>
             </div>
-            <button onClick={() => auth.logout()} className="rounded-lg p-2 text-ink-soft hover:bg-muted" title="Đăng xuất" aria-label="Đăng xuất">
+            <button onClick={() => auth.logout()} className="rounded-lg p-2 text-slate-300 hover:bg-white/10" title="Đăng xuất" aria-label="Đăng xuất">
               <LogOut size={16} />
             </button>
           </div>
@@ -140,9 +141,9 @@ function ProjectPicker() {
   const { projects, projectFilter, setProjectFilter, me } = useApp();
   const active = projects.filter((p) => p.status !== "done" || p.id === projectFilter).sort((a, b) => a.name.localeCompare(b.name, "vi"));
   return (
-    <label className="block rounded-lg bg-muted px-3 py-2">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-soft">Đang xem</span>
-      <Select className="mt-1 h-8 border-0 bg-surface py-0 text-xs font-semibold" value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} aria-label="Chọn dự án">
+    <label className="block rounded-lg bg-white/10 px-3 py-2">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-safety-400">Đang xem</span>
+      <Select className="mt-1 h-8 border-0 bg-white py-0 text-xs font-semibold text-slate-900" value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} aria-label="Chọn dự án">
         <option value="all">{seesAllProjects(me) ? "Cả công ty" : "Tất cả dự án của tôi"}</option>
         {active.map((p) => (
           <option key={p.id} value={p.id}>

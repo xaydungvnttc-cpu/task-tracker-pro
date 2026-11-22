@@ -16,7 +16,7 @@ writeFileSync(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2554e8">
+<meta name="theme-color" content="#0f2a44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Task Tracker">
 <link rel="manifest" href="manifest.webmanifest">
@@ -35,13 +35,13 @@ writeFileSync(
   resolve(out, "manifest.webmanifest"),
   JSON.stringify(
     {
-      name: "Task Tracker Pro",
-      short_name: "Task Tracker",
+      name: "TTC Điều Hành",
+      short_name: "TTC Điều Hành",
       start_url: "./#today",
       scope: "./",
       display: "standalone",
       background_color: "#f5f7fb",
-      theme_color: "#2554e8",
+      theme_color: "#0f2a44",
       lang: "vi",
       icons: [
         { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },

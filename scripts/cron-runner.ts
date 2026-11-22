@@ -11,7 +11,7 @@ import { serverToday } from "../src/lib/server/context";
 import { ZALO_BOT_API, splitIds } from "../src/lib/server/notification-service";
 import { classify, taskFromZalo } from "../src/lib/server/zalo-inbox";
 import { formatDate } from "../src/lib/dates";
-import type { NotificationConfig, Project, User } from "../src/lib/types";
+import type { NotificationConfig, Project, Task, User } from "../src/lib/types";
 
 const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
 if (!sa) throw new Error("Thiếu secret FIREBASE_SERVICE_ACCOUNT");
@@ -107,7 +107,7 @@ async function processInbox() {
       } else if (first) {
         await send(chatId, `Đã đăng ký nhận bản tổng hợp toàn công ty cho ${sender}: 8:00 sáng, 16:00 việc hạn hôm nay chưa xong, 20:00 Chủ nhật báo cáo tuần. Muốn giao việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
       } else if (!known) {
-        await send(chatId, `Chào ${sender}. Để nhận nhắc việc riêng, mở app Task Tracker Pro, vào Cài đặt > Hồ sơ của tôi, lấy mã rồi nhắn cho bot, ví dụ "LK AB12CD". Muốn báo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
+        await send(chatId, `Chào ${sender}. Để nhận nhắc việc riêng, mở app TTC Điều Hành, vào Cài đặt > Hồ sơ của tôi, lấy mã rồi nhắn cho bot, ví dụ "LK AB12CD". Muốn báo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
       } else if (text) {
         await send(chatId, `Tin này chưa thành việc. Muốn tạo việc, nhắn bắt đầu bằng "Việc:" hoặc "Gấp:".`);
       }
@@ -119,10 +119,43 @@ async function processInbox() {
   }
 }
 
+/**
+ * Nhắc giờ hẹn trước khoảng 1 giờ (chạy cùng lượt đọc tin 15 phút một lần).
+ * Ví dụ việc "Mời TVGS nghiệm thu cốt thép sàn 6" hẹn 09:00 → khoảng 8:00 người làm nhận tin Zalo và chuông trong app.
+ */
+async function remindAppointments() {
+  const { db } = getAdmin()!;
+  const cfg: NotificationConfig = withDefaults(((await db.doc("settings/integrations").get()).data() as NotificationConfig) ?? null);
+  const today = serverToday();
+  const hm = new Intl.DateTimeFormat("en-GB", { timeZone: process.env.APP_TIMEZONE || "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  const toMin = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5));
+  const now = toMin(hm);
+  const snap = await db.collection("tasks").where("dueDate", "==", today).get();
+  const due = snap.docs
+    .map((d) => ({ ...(d.data() as Task), id: d.id }))
+    .filter((t) => t.status !== "done" && t.dueTime && t.timeReminded !== `${today} ${t.dueTime}`)
+    .filter((t) => {
+      const left = toMin(t.dueTime!) - now;
+      return left >= 0 && left <= 75;
+    });
+  if (!due.length) return;
+  const users = (await db.collection("users").get()).docs.map((d) => ({ ...(d.data() as User), id: d.id }));
+  const nowIso = new Date().toISOString();
+  for (const t of due) {
+    const u = users.find((x) => x.id === t.assigneeId);
+    const text = `⏰ ${t.dueTime} hôm nay: ${t.title}${u ? ` (${u.name})` : ""}. Xem tại ${process.env.NEXT_PUBLIC_APP_URL ?? ""}/tasks`;
+    if (u?.zaloChatId && cfg.zalo.mode === "bot" && cfg.zalo.botToken) await zaloBot(cfg.zalo.botToken, "sendMessage", { chat_id: u.zaloChatId, text }).catch(() => null);
+    if (u) await db.collection("notifications").add({ userId: u.id, title: `Sắp đến giờ hẹn ${t.dueTime}`, body: t.title, taskId: t.id, read: false, createdAt: nowIso });
+    await db.doc(`tasks/${t.id}`).set({ timeReminded: `${today} ${t.dueTime}` }, { merge: true });
+    console.log(`Nhắc giờ hẹn: ${t.id}`);
+  }
+}
+
 const kind = process.argv[2];
 if (kind !== "daily" && kind !== "weekly" && kind !== "afternoon" && kind !== "inbox") throw new Error("Dùng: daily | weekly | afternoon | inbox");
 
 await processInbox();
+if (kind === "inbox") await remindAppointments();
 if (kind !== "inbox") {
   const r = await runJob(kind);
   console.log(JSON.stringify({ ...r, preview: undefined }, null, 2));
