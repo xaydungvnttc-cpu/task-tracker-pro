@@ -35,7 +35,7 @@ export default function MembersPage() {
         <Card className="lg:col-span-2">
           <CardTitle>{users.length} thành viên</CardTitle>
           <div className="divide-y divide-line">
-            {users.map((u) => {
+            {[...users].sort((a, b) => Number(!!b.pending) - Number(!!a.pending)).map((u) => {
               const mine = tasks.filter((t) => t.assigneeId === u.id && t.status !== "done");
               return (
                 <div key={u.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
@@ -50,6 +50,16 @@ export default function MembersPage() {
                       {mine.some((t) => isOverdue(t, today)) && <span className="text-red-600"> · có việc quá hạn</span>}
                     </div>
                   </div>
+                  {u.pending && (
+                    <>
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-300">Chờ duyệt</span>
+                      {admin && (
+                        <Button size="sm" variant="primary" onClick={() => update(u, { pending: false })}>
+                          Duyệt
+                        </Button>
+                      )}
+                    </>
+                  )}
                   <Select className="h-9 w-auto py-1 text-xs" disabled={!admin} value={u.department} onChange={(e) => update(u, { department: e.target.value })}>
                     {Array.from(new Set([...DEPARTMENTS, u.department])).map((d) => (
                       <option key={d}>{d}</option>
@@ -98,7 +108,7 @@ export default function MembersPage() {
                   </>
                 ) : (
                   <p className="text-sm text-ink-soft">
-                    Gửi link app cho đồng nghiệp để tự đăng ký (email hoặc Google). Tài khoản mới mặc định là Thành viên, sau đó bạn nâng quyền ở danh sách bên cạnh.
+                    Gửi link app cho đồng nghiệp để tự đăng ký (email hoặc Google). Tài khoản mới hiện "Chờ duyệt" ở đầu danh sách, chưa xem được gì. Bạn bấm Duyệt, chọn phòng ban và vai trò cho họ.
                   </p>
                 )}
               </div>

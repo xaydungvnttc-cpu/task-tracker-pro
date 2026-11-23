@@ -66,6 +66,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </div>
     );
 
+  // Tài khoản mới tự đăng nhập: chưa xem được gì cho tới khi Quản trị bấm Duyệt ở mục Thành viên
+  if (me.pending)
+    return (
+      <div className="flex min-h-dvh items-center justify-center p-6">
+        <div className="max-w-sm rounded-xl border border-line bg-surface p-6 text-center shadow-sm">
+          <div className="text-lg font-semibold">Tài khoản đang chờ duyệt</div>
+          <p className="mt-2 text-sm text-ink-soft">
+            Chào {me.name}. Để giữ an toàn dữ liệu công ty, Quản trị cần duyệt tài khoản ({me.email}) ở mục Thành viên. Duyệt xong anh chị tải lại trang là dùng được.
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <Button onClick={() => location.reload()}>Tải lại</Button>
+            <Button variant="ghost" onClick={() => auth.logout()}>Đăng xuất</Button>
+          </div>
+        </div>
+      </div>
+    );
+
   return (
     <div className="min-h-dvh lg:pl-60">
       {/* Thanh bên: cố định trên máy tính, trượt ra trên điện thoại/iPad dọc */}

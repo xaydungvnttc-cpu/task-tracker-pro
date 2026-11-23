@@ -132,6 +132,8 @@ async function ensureProfile(fb: FbUser, department?: string): Promise<User> {
     role: isFirst ? "owner" : "member",
     department: department ?? (isFirst ? DEPARTMENTS[0] : DEPARTMENTS[1]),
     color: AVATAR_COLORS[fb.uid.charCodeAt(0) % AVATAR_COLORS.length],
+    // Ai có link cũng đăng nhập Google được, nên người mới phải chờ Quản trị duyệt mới xem được việc của công ty
+    ...(isFirst ? {} : { pending: true }),
   };
   const b = writeBatch(db);
   b.set(ref, clean(user));

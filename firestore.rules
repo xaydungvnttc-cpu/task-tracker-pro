@@ -5,9 +5,19 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    // Nhân sự đã được duyệt: có hồ sơ và không còn "chờ duyệt". Ai có link cũng đăng nhập Google được nên phải chặn ở đây.
+    function staff() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && me().get('pending', false) != true;
+    }
+    // GĐDA hoặc Chỉ huy trưởng của dự án pid
+    function leads(pid) {
+      return pid is string && exists(/databases/$(database)/documents/projects/$(pid)) && (
+        get(/databases/$(database)/documents/projects/$(pid)).data.get('directorId', null) == request.auth.uid ||
+        get(/databases/$(database)/documents/projects/$(pid)).data.get('siteManagerId', null) == request.auth.uid);
+    }
     function role() { return me().role; }
-    function isOwner() { return signedIn() && role() == 'owner'; }
-    function isManager() { return signedIn() && role() in ['owner', 'manager']; }
+    function isOwner() { return staff() && role() == 'owner'; }
+    function isManager() { return staff() && role() in ['owner', 'manager']; }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
     // Người đầu tiên đăng ký trở thành Owner (ghi kèm meta/owner trong cùng batch)
@@ -17,44 +27,49 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if signedIn();
+      // Người chờ duyệt chỉ đọc được hồ sơ của chính mình
+      allow read: if staff() || (signedIn() && uid == request.auth.uid);
       // Owner được tạo, xóa hồ sơ nhân sự mẫu (mã bắt đầu bằng "mau-")
       allow create, delete: if isOwner() && uid.matches('mau-.*');
       allow create: if signedIn() && uid == request.auth.uid && (
-        request.resource.data.role == 'member' ||
+        (request.resource.data.role == 'member' && request.resource.data.pending == true) ||
         (request.resource.data.role == 'owner'
           && !exists(/databases/$(database)/documents/meta/owner)
           && getAfter(/databases/$(database)/documents/meta/owner).data.uid == request.auth.uid)
       );
       // Owner sửa mọi người; người khác chỉ sửa hồ sơ mình và không tự đổi vai trò/phòng ban
       allow update: if isOwner() ||
-        (signedIn() && uid == request.auth.uid && !changed().hasAny(['role', 'department', 'id', 'email']));
+        (signedIn() && uid == request.auth.uid && !changed().hasAny(['role', 'department', 'id', 'email', 'pending']));
     }
 
     match /tasks/{taskId} {
-      allow read: if signedIn();
-      allow create: if signedIn() && (
+      allow read: if staff();
+      allow create: if staff() && (
         role() != 'member' ||
+        leads(request.resource.data.get('projectId', null)) ||
         // Member hoàn thành việc định kỳ của mình thì được sinh kỳ kế tiếp
         (request.resource.data.recurrence != null && request.resource.data.assigneeId == request.auth.uid)
       );
       allow delete: if isManager();
-      allow update: if isManager()
+      allow update: if isManager() || (staff() && (
+        // GĐDA, CHT điều hành mọi việc trong dự án mình, không chuyển việc ra khỏi dự án
+        (leads(resource.data.get('projectId', null)) && request.resource.data.get('projectId', null) == resource.data.get('projectId', null))
         || (role() == 'editor' && (resource.data.createdBy == request.auth.uid || resource.data.assigneeId == request.auth.uid))
         || (resource.data.assigneeId == request.auth.uid
             && changed().hasOnly(['status', 'checklist', 'outputLinks', 'comments', 'completedAt', 'updatedAt', 'recurrenceSpawned']))
         // Ai cũng được bình luận
-        || (signedIn() && changed().hasOnly(['comments', 'updatedAt']));
+        || changed().hasOnly(['comments', 'updatedAt'])));
     }
 
-    // Dự án và mốc hợp đồng: ai đăng nhập cũng xem, Quản trị và Quản lý sửa
+    // Dự án: nhân sự đã duyệt cùng xem; Quản trị, Quản lý tạo, xóa, đổi GĐDA và CHT; GĐDA, CHT sửa mốc, thành viên dự án mình
     match /projects/{projectId} {
-      allow read: if signedIn();
-      allow write: if isManager();
+      allow read: if staff();
+      allow create, delete: if isManager();
+      allow update: if isManager() || (staff() && leads(projectId) && !changed().hasAny(['id', 'directorId', 'siteManagerId']));
     }
 
     match /notifications/{id} {
-      allow create: if signedIn();
+      allow create: if staff();
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
       allow update: if signedIn() && resource.data.userId == request.auth.uid && changed().hasOnly(['read']);
     }

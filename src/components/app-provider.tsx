@@ -124,14 +124,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!me) return;
+    if (!me || me.pending) return;
     return data.subscribe(me.id, (p) => {
       if (p.users) setUsers(p.users);
       if (p.tasks) setTasks(p.tasks);
       if (p.projects) setProjects(p.projects);
       if (p.notifications) setNotifications(p.notifications);
     });
-  }, [me?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [me?.id, me?.pending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toast = useCallback((text: string, tone: Toast["tone"] = "info") => {
     const id = newId();
@@ -147,8 +147,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const saveProject = useCallback(
     async (p: Project) => {
-      if (!me || !can.manageProjects(me)) {
-        toast("Chỉ Quản trị hoặc Quản lý được sửa dự án", "error");
+      const prev = allProjects.find((x) => x.id === p.id);
+      const allowed = !!me && (can.manageProjects(me) || (!!prev && can.editProject(me, prev) && prev.directorId === p.directorId && prev.siteManagerId === p.siteManagerId));
+      if (!allowed) {
+        toast("Chỉ Quản trị, Quản lý (hoặc GĐDA, CHT với dự án mình, trừ việc đổi GĐDA, CHT) được sửa dự án", "error");
         return false;
       }
       try {
@@ -159,7 +161,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [me, toast],
+    [me, toast, allProjects],
   );
 
   const deleteProject = useCallback(
@@ -207,8 +209,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async (next: Task): Promise<boolean> => {
       if (!me) return false;
       const prev = tasks.find((t) => t.id === next.id);
-      if (prev ? !can.updateProgress(me, prev) : !can.createTask(me)) {
+      if (prev ? !can.updateProgress(me, prev, projectById(prev.projectId)) : !can.createTask(me)) {
         toast("Bạn không có quyền thực hiện thao tác này", "error");
+        return false;
+      }
+      // GĐDA, CHT chỉ điều hành việc trong dự án mình, không chuyển việc sang dự án khác
+      if (prev && next.projectId !== prev.projectId && !can.assignOthers(me) && !(prev.createdBy === me.id && me.role === "editor")) {
+        toast("Chỉ Quản trị hoặc Quản lý được chuyển việc sang dự án khác", "error");
         return false;
       }
       // Mọi việc phải có bằng chứng hoàn thành. Ví dụ: "Nghiệm thu cốt thép sàn 6" cần link biên bản nghiệm thu, ảnh hiện trường
@@ -251,7 +258,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!prev) toast("Đã tạo việc", "success");
       return true;
     },
-    [me, tasks, toast, userById, notifyInApp, dispatchExternal],
+    [me, tasks, toast, userById, notifyInApp, dispatchExternal, projectById],
   );
 
   // Việc định kỳ: khi xong hoặc tới kỳ thì sinh kỳ mới (người có quyền cập nhật mới chạy, tránh ghi thừa)
@@ -271,13 +278,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setPriority = useCallback(
     (t: Task, important: boolean, urgent: boolean) => {
-      if (!me || !can.editTask(me, t)) {
+      if (!me || !can.editTask(me, t, projectById(t.projectId))) {
         toast("Chỉ người có quyền sửa việc mới đổi được độ ưu tiên", "error");
         return Promise.resolve(false);
       }
       return saveTask({ ...t, important, urgent });
     },
-    [me, saveTask, toast],
+    [me, saveTask, toast, projectById],
   );
 
   const toggleChecklist = useCallback(

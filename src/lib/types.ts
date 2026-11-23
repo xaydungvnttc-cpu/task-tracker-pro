@@ -13,6 +13,7 @@ export interface User {
   title?: string;
   color: string; // màu avatar
   zaloChatId?: string; // liên kết Zalo Bot để nhận nhắc việc riêng
+  pending?: boolean; // tài khoản mới tự đăng nhập, chờ Quản trị duyệt mới xem được dữ liệu
 }
 
 export interface ChecklistItem {

@@ -10,6 +10,7 @@ import { Avatar, Button, ConfirmButton, Drawer, Field, Input, ProgressBar, Segme
 import { DEPARTMENTS, OFFICE, OFFICE_LABEL, FREQ_LABEL, STATUS_LABEL, STATUS_ORDER, TIME_TYPE_LABEL, WEEKDAY_SHORT } from "@/lib/constants";
 import { addDays, formatDateTime, weekday } from "@/lib/dates";
 import { can } from "@/lib/rbac";
+import { isProjectMember } from "@/lib/projects";
 import { newId, nextOccurrence, progressOf, taskCode } from "@/lib/tasks";
 import type { LinkItem, RecurrenceFreq, Task, TimeType } from "@/lib/types";
 
@@ -43,7 +44,7 @@ function blankTask(createdBy: string, department: string, today: string, preset?
 }
 
 export function TaskDrawer() {
-  const { drawer, closeDrawer, tasks, projects, projectFilter, me, users, today, saveTask, deleteTask, addComment, userById } = useApp();
+  const { drawer, closeDrawer, tasks, projects, projectFilter, me, users, today, saveTask, deleteTask, addComment, userById, projectById } = useApp();
   const stored = drawer?.taskId ? tasks.find((t) => t.id === drawer.taskId) : undefined;
   const [draft, setDraft] = useState<Task | null>(null);
   const [comment, setComment] = useState("");
@@ -67,8 +68,11 @@ export function TaskDrawer() {
   if (!drawer || !draft || !me) return null;
 
   const isNew = drawer.isNew;
-  const fullEdit = isNew ? can.createTask(me) : can.editTask(me, draft);
-  const progressEdit = isNew || can.updateProgress(me, draft);
+  // Quyền theo dự án gốc của việc: GĐDA, CHT điều hành việc trong dự án mình
+  const homeProject = projectById(isNew ? draft.projectId : stored?.projectId);
+  const fullEdit = isNew ? can.createTask(me) : can.editTask(me, draft, homeProject);
+  const progressEdit = isNew || can.updateProgress(me, draft, homeProject);
+  const companyWide = can.assignOthers(me);
   const set = (p: Partial<Task>) => setDraft({ ...draft, ...p });
 
   const setTimeType = (tt: TimeType) => {
@@ -97,7 +101,12 @@ export function TaskDrawer() {
     if (ok) closeDrawer();
   };
 
-  const assignable = can.assignOthers(me) ? users : users.filter((u) => u.id === me.id);
+  // Quản trị, Quản lý giao cho mọi người; GĐDA, CHT giao cho người trong dự án; người khác chỉ tự nhận
+  const assignable = companyWide
+    ? users
+    : can.assignOthers(me, homeProject)
+      ? users.filter((u) => u.id === me.id || (homeProject && isProjectMember(homeProject, u)))
+      : users.filter((u) => u.id === me.id);
   const pct = progressOf(draft);
   const next = draft.recurrence ? nextOccurrence(draft, today) : null;
   const outputMissing = draft.outputLinks.length === 0;
@@ -137,7 +146,7 @@ export function TaskDrawer() {
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Dự án">
-            <Select value={draft.projectId ?? ""} disabled={!fullEdit} onChange={(e) => set({ projectId: e.target.value || null })}>
+            <Select value={draft.projectId ?? ""} disabled={!fullEdit || (!isNew && !companyWide)} onChange={(e) => set({ projectId: e.target.value || null })}>
               <option value="">{OFFICE_LABEL}</option>
               {projects
                 .filter((p) => p.status !== "done" || p.id === draft.projectId)

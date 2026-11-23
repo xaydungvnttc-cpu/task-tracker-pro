@@ -22,10 +22,10 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 
 export const ROLE_DESC: Record<Role, string> = {
-  owner: "Toàn quyền, quản lý thành viên và tích hợp",
-  manager: "Giao việc, xóa việc, xem báo cáo tổng",
-  editor: "Tạo việc, sửa việc mình tạo hoặc được giao",
-  member: "Cập nhật tiến độ, các bước, bàn giao việc được giao",
+  owner: "Chủ tịch, TGĐ: toàn quyền, duyệt tài khoản mới, phân quyền, cài đặt tích hợp",
+  manager: "Phó TGĐ, trưởng phòng: giao, sửa, xóa mọi việc; tạo và sửa dự án; xem báo cáo, KPI",
+  editor: "Tạo việc, sửa việc mình tạo hoặc được giao. Nếu là GĐDA hoặc Chỉ huy trưởng thì điều hành mọi việc của dự án mình",
+  member: "Cập nhật tiến độ, các bước, link kết quả của việc được giao; bình luận",
 };
 
 export const STATUS_ORDER: TaskStatus[] = ["todo", "in_progress", "on_hold", "done"];

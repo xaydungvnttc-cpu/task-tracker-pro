@@ -8,7 +8,7 @@ import { can } from "@/lib/rbac";
 import { quadrantOf } from "@/lib/tasks";
 
 export default function MatrixPage() {
-  const { scoped, me, setPriority } = useApp();
+  const { scoped, me, setPriority, projectById } = useApp();
   const open = scoped.filter((t) => t.status !== "done");
   const columns = QUADRANTS.map((q, i) => {
     const tasks = open.filter((t) => quadrantOf(t) === q.id).sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999"));
@@ -34,7 +34,7 @@ export default function MatrixPage() {
       <PageHeader title="Ma trận ưu tiên" desc="Việc tự xếp vào 4 ô theo cờ Quan trọng và Khẩn cấp. Kéo sang ô khác để đổi độ ưu tiên." />
       <DragBoard
         columns={columns}
-        canDrag={(t) => !!me && can.editTask(me, t)}
+        canDrag={(t) => !!me && can.editTask(me, t, projectById(t.projectId))}
         onMove={(t, col) => {
           const q = QUADRANTS.find((x) => x.id === col)!;
           setPriority(t, q.important, q.urgent);

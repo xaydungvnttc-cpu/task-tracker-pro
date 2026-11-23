@@ -18,7 +18,7 @@ function blankProject(color: string): Project {
   return { id: newId(), code: "", name: "", client: "", directorId: null, siteManagerId: null, memberIds: [], startDate: null, endDate: null, status: "active", milestones: [], color };
 }
 
-/** Danh sách dự án và mốc tiến độ hợp đồng. Quản trị, Quản lý thêm và sửa; người khác chỉ xem. */
+/** Danh sách dự án và mốc tiến độ hợp đồng. Quản trị, Quản lý thêm, sửa, xóa; GĐDA, CHT sửa dự án mình; người khác chỉ xem. */
 export default function ProjectsPage() {
   const { me, projects, tasks, today, userById } = useApp();
   const [editing, setEditing] = useState<Project | null>(null);
@@ -102,12 +102,12 @@ export default function ProjectsPage() {
           );
         })}
       </div>
-      {editing && <ProjectDrawer project={editing} readOnly={!edit} onClose={() => setEditing(null)} />}
+      {editing && <ProjectDrawer project={editing} readOnly={projects.some((p) => p.id === editing.id) ? !can.editProject(me!, editing) : !edit} canManage={edit} onClose={() => setEditing(null)} />}
     </>
   );
 }
 
-function ProjectDrawer({ project, readOnly, onClose }: { project: Project; readOnly: boolean; onClose: () => void }) {
+function ProjectDrawer({ project, readOnly, canManage, onClose }: { project: Project; readOnly: boolean; canManage: boolean; onClose: () => void }) {
   const { users, projects, saveProject, deleteProject } = useApp();
   const [d, setD] = useState<Project>(project);
   const isNew = !projects.some((p) => p.id === project.id);
@@ -134,7 +134,7 @@ function ProjectDrawer({ project, readOnly, onClose }: { project: Project; readO
       footer={
         !readOnly && (
           <div className="flex items-center gap-2">
-            {!isNew && <ConfirmButton variant="ghost" className="text-red-600" label={<><Trash2 size={16} /> Xóa</>} confirmLabel="Bấm lần nữa để xóa" onConfirm={() => deleteProject(project).then(onClose)} />}
+            {!isNew && canManage && <ConfirmButton variant="ghost" className="text-red-600" label={<><Trash2 size={16} /> Xóa</>} confirmLabel="Bấm lần nữa để xóa" onConfirm={() => deleteProject(project).then(onClose)} />}
             <div className="flex-1" />
             <Button onClick={onClose}>Hủy</Button>
             <Button variant="primary" disabled={!valid} onClick={save}>
@@ -158,7 +158,7 @@ function ProjectDrawer({ project, readOnly, onClose }: { project: Project; readO
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Giám đốc dự án">
-            <Select value={d.directorId ?? ""} onChange={(e) => set({ directorId: e.target.value || null })}>
+            <Select value={d.directorId ?? ""} disabled={!canManage} onChange={(e) => set({ directorId: e.target.value || null })}>
               <option value="">Chưa chọn</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -168,7 +168,7 @@ function ProjectDrawer({ project, readOnly, onClose }: { project: Project; readO
             </Select>
           </Field>
           <Field label="Chỉ huy trưởng">
-            <Select value={d.siteManagerId ?? ""} onChange={(e) => set({ siteManagerId: e.target.value || null })}>
+            <Select value={d.siteManagerId ?? ""} disabled={!canManage} onChange={(e) => set({ siteManagerId: e.target.value || null })}>
               <option value="">Chưa chọn</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
