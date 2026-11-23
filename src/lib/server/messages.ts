@@ -1,6 +1,6 @@
 import "server-only";
 import { STATUS_LABEL } from "../constants";
-import { addDays, formatDate, startOfWeek } from "../dates";
+import { addDays, formatDate, weekday } from "../dates";
 import { projectHealth } from "../projects";
 import { RULES, managersOf, watchList } from "../reminders";
 import { RISK_LABEL, companyRisks } from "../early-warning";
@@ -147,10 +147,13 @@ export function afternoonCheck(tasks: Task[], users: User[], today: string): Out
   };
 }
 
-/** Báo cáo tổng kết tuần, 20:00 Chủ nhật */
+/**
+ * Báo cáo tổng kết tuần, 20:00 Chủ nhật. Luôn tổng kết tuần đã kết thúc gần nhất (Thứ Hai đến Chủ nhật),
+ * nên lịch GitHub chạy trễ sang sáng Thứ Hai vẫn ra đúng: gửi 23/11 (Thứ Hai) thì tổng kết 16/11 – 22/11, kế hoạch 23/11 – 29/11.
+ */
 export function weeklyReport(tasks: Task[], users: User[], today: string, projects: Project[] = []): OutgoingMessage {
-  const ws = startOfWeek(today);
-  const we = addDays(ws, 6);
+  const we = addDays(today, -weekday(today));
+  const ws = addDays(we, -6);
   const doneWeek = tasks.filter((t) => t.status === "done" && t.completedAt && t.completedAt.slice(0, 10) >= ws && t.completedAt.slice(0, 10) <= we);
   const withDue = doneWeek.filter((t) => t.dueDate);
   const rate = withDue.length ? Math.round((withDue.filter(onTime).length / withDue.length) * 100) : null;
