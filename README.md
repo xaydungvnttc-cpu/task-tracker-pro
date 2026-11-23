@@ -3,7 +3,7 @@
 Web app giao việc và kiểm soát tiến độ cho đội nhóm. Chạy trên điện thoại, iPad, laptop và cài được lên màn hình chính như ứng dụng (PWA).
 
 - **6 phân hệ:** Dashboard KPI, Việc hôm nay, Danh sách việc + việc định kỳ, Ma trận Eisenhower (kéo thả), Kanban (kéo thả), Lịch tháng/tuần dạng thanh Gantt + xuất `.ics` + link đồng bộ Google Calendar.
-- **Phân quyền:** Owner, Manager, Editor, Member. Bộ lọc phạm vi Tất cả / Việc của tôi / Đội nhóm / Chưa gán áp dụng cho mọi màn hình.
+- **Phân quyền:** Owner (Chủ tịch, TGĐ), Manager (Phó TGĐ, trưởng phòng), Editor (Điều phối), Member. GĐDA và Chỉ huy trưởng của một dự án được giao, sửa mọi việc và sửa mốc, thành viên của dự án mình (không đổi GĐDA, CHT, không xóa dự án). Tài khoản mới tự đăng nhập phải chờ Quản trị bấm Duyệt ở mục Thành viên. Chi tiết ở `src/lib/rbac.ts`, `firestore.rules` áp lại đúng như vậy phía máy chủ (kiểm thử 22 tình huống bằng Firestore emulator). Bộ lọc phạm vi Tất cả / Việc của tôi / Đội nhóm / Chưa gán áp dụng cho mọi màn hình.
 - **Thông báo đa kênh:** Zalo, Telegram, Email (Resend/SMTP), Lark/Slack/Discord/Custom webhook, chuông trong app. Ba kịch bản: sự kiện tức thì, nhắc việc 8:00 sáng, báo cáo 20:00 Chủ nhật.
 - **Hai chế độ:** không có key thì chạy **Demo** (dữ liệu mẫu, lưu trong trình duyệt); điền key Firebase thì chạy **Production** (đăng nhập thật, Firestore real-time).
 
