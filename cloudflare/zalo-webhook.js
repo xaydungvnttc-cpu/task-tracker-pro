@@ -7,6 +7,11 @@
  * Biến bí mật cần đặt trong Cloudflare (Settings > Variables and Secrets), KHÔNG ghi vào mã:
  *   ZALO_BOT_TOKEN  Bot Token Zalo (giống ô ở Cài đặt của app)
  *   GITHUB_TOKEN    mã GitHub chỉ có quyền "Actions: Read and write" trên repo task-tracker-pro
+ *
+ * Lịch gửi bản tin (Settings > Trigger events > Cron: "*\/15 * * * *", 15 phút một lần, giờ UTC):
+ *   01:00 UTC = 8:00 VN nhắc việc sáng; 09:00 UTC thứ 2-7 = 16:00 VN việc hạn hôm nay chưa xong;
+ *   13:00 UTC Chủ nhật = 20:00 VN báo cáo tuần; các lần còn lại chỉ nhắc giờ hẹn.
+ * Cloudflare gọi đúng phút, thay cho lịch của GitHub vốn trễ nhiều giờ.
  */
 const REPO = "xaydungvnttc-cpu/task-tracker-pro";
 
@@ -17,7 +22,30 @@ async function webhookSecret(botToken) {
   return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function dispatch(env, inputs) {
+  return fetch(`https://api.github.com/repos/${REPO}/actions/workflows/nhac-viec.yml/dispatches`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "User-Agent": "ttc-zalo-webhook", "Content-Type": "application/json" },
+    body: JSON.stringify({ ref: "main", inputs }),
+  });
+}
+
+/** Lần chạy 15 phút này gửi bản tin nào (giờ UTC) */
+function kindAt(date) {
+  const h = date.getUTCHours();
+  const first = date.getUTCMinutes() < 15;
+  const dow = date.getUTCDay(); // 0 = Chủ nhật
+  if (first && h === 1) return "daily";
+  if (first && h === 9 && dow !== 0) return "afternoon";
+  if (first && h === 13 && dow === 0) return "weekly";
+  return "inbox";
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(dispatch(env, { kind: kindAt(new Date(event.scheduledTime)) }));
+  },
+
   async fetch(req, env, ctx) {
     if (req.method !== "POST") return new Response("TTC Điều Hành: máy chủ nhận tin Zalo đang chạy.");
     if (req.headers.get("X-Bot-Api-Secret-Token") !== (await webhookSecret(env.ZALO_BOT_TOKEN))) return new Response("Sai mã bí mật", { status: 403 });
@@ -32,11 +60,7 @@ export default {
 
     ctx.waitUntil(
       (async () => {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/nhac-viec.yml/dispatches`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "User-Agent": "ttc-zalo-webhook", "Content-Type": "application/json" },
-          body: JSON.stringify({ ref: "main", inputs: { kind: "inbox", update: JSON.stringify(update) } }),
-        });
+        const res = await dispatch(env, { kind: "inbox", update: JSON.stringify(update) });
         await zalo("sendMessage", {
           chat_id: chatId,
           text: res.ok ? "⏳ Đã nhận, bot đang xử lý, khoảng 1 phút nữa có trả lời." : `Bot chưa xử lý được (lỗi ${res.status}). Báo quản trị app kiểm tra máy chủ nhận tin.`,

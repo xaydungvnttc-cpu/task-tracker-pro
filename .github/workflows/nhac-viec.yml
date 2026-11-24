@@ -1,14 +1,10 @@
 # Nhắc việc tự động qua Zalo Bot, chạy miễn phí trên GitHub (không cần Vercel).
-# Giờ GitHub tính theo UTC: 01:00 UTC = 8:00 sáng Việt Nam, 09:00 UTC = 16:00, 13:00 UTC Chủ nhật = 20:00 Việt Nam.
-# GitHub có thể chạy trễ 5-30 phút vào giờ cao điểm.
+# Giờ Việt Nam: 8:00 nhắc việc sáng, 16:00 (T2-T7) việc hạn hôm nay chưa xong, 20:00 Chủ nhật báo cáo tuần, 15 phút một lần nhắc giờ hẹn.
 name: Nhắc việc tự động
 
+# Giờ chạy do máy chủ Cloudflare (cloudflare/zalo-webhook.js, hàm scheduled) gọi đúng phút, vì lịch "schedule"
+# của GitHub với repo này trễ nhiều giờ (bản tin 16:00 từng tới lúc 4 giờ sáng). Mỗi bản tin còn tự kiểm khung giờ.
 on:
-  schedule:
-    - cron: "0 1 * * *" # 8:00 sáng hằng ngày
-    - cron: "0 13 * * 0" # 20:00 Chủ nhật
-    - cron: "0 9 * * 1-6" # 16:00 thứ 2 - thứ 7: việc hạn hôm nay chưa xong
-    - cron: "*/15 * * * *" # 15 phút một lần: đọc tin nhắn gửi bot, tin quan trọng thành việc
   workflow_dispatch:
     inputs:
       kind:
@@ -55,9 +51,6 @@ jobs:
         id: pick
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then k="${{ inputs.kind }}";
-          elif [ "${{ github.event.schedule }}" = "0 1 * * *" ]; then k=daily;
-          elif [ "${{ github.event.schedule }}" = "0 13 * * 0" ]; then k=weekly;
-          elif [ "${{ github.event.schedule }}" = "0 9 * * 1-6" ]; then k=afternoon;
           else k=inbox; fi
           echo "kind=$k" >> "$GITHUB_OUTPUT"
       - run: npx esbuild scripts/cron-runner.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=.cron/cron-runner.mjs --log-level=warning

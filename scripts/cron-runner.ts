@@ -196,6 +196,11 @@ async function processInbox() {
     const list = (Array.isArray(r.result) ? r.result : r.result ? [r.result] : []) as ZaloUpdate[];
     // Zalo trả 408 "Request timeout" khi không có tin mới, đó không phải lỗi
     const empty = (r as { error_code?: number }).error_code === 408;
+    // Đã bật máy chủ nhận tin (webhook) thì tin tự đẩy tới, không cần đọc
+    if (!r.ok && /webhook/i.test(String((r as { description?: string }).description))) {
+      console.log("Đọc tin Zalo: tin đi qua máy chủ nhận tin, không cần đọc");
+      break;
+    }
     // Không bao giờ huỷ ngang một lần chờ tin: Zalo có thể đã giao tin cho kết nối bị huỷ và tin đó mất luôn
     if (i === 0 || list.length || (!r.ok && !empty)) console.log(`Đọc tin Zalo: ${r.ok ? `${list.length} tin mới` : empty ? "không có tin mới" : "lỗi " + JSON.stringify(r).slice(0, 200)}`);
     if (!r.ok || !list.length) {
@@ -299,9 +304,25 @@ if (kind === "webhook") {
   process.exit();
 }
 
+/**
+ * Mỗi bản tin chỉ gửi trong khung giờ của nó (giờ Việt Nam). Lịch chạy bị trễ quá khung thì bỏ qua,
+ * tránh chuyện "16:00 còn 10 việc hạn hôm nay" lại tới lúc 4 giờ sáng hôm sau.
+ */
+function inWindow(k: string): boolean {
+  const vn = new Date(Date.now() + 7 * 3600_000);
+  const h = vn.getUTCHours() + vn.getUTCMinutes() / 60;
+  const dow = vn.getUTCDay(); // 0 = Chủ nhật
+  if (k === "daily") return h >= 7 && h < 10;
+  if (k === "afternoon") return dow !== 0 && h >= 15.5 && h < 18;
+  if (k === "weekly") return (dow === 0 && h >= 19) || (dow === 1 && h < 10);
+  return true;
+}
+
 await processInbox();
-if (kind === "inbox") await remindAppointments();
-if (kind !== "inbox") {
+await remindAppointments();
+if (kind !== "inbox" && !inWindow(kind) && process.env.FORCE !== "1") {
+  console.log(`Bỏ qua bản tin ${kind}: lịch chạy lúc ${new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 16).replace("T", " ")} giờ VN, ngoài khung giờ gửi`);
+} else if (kind !== "inbox") {
   const r = await runJob(kind as "daily" | "weekly" | "afternoon");
   console.log(JSON.stringify({ ...r, preview: undefined }, null, 2));
   console.log(r.preview);
